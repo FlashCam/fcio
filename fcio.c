@@ -766,7 +766,7 @@ returns 1 on success or 0 on error
 tmio_stream *xio=(tmio_stream *)x;
 if(xio==0) return 0;
 tmio_read_data(xio, data, size);
-if(tmio_status(xio)<0 && debug>2) fprintf(stderr,"FCIORead: eof reading `data of size %d\n",size);
+if(tmio_status(xio)<0 && debug>0) fprintf(stderr,"FCIORead/WARNING: reading data of size %d\n",size);
 else if(debug>5) fprintf(stderr,"FCIORead: size %d @ %lx \n",size,(long)xio);
 return 1;
 }
