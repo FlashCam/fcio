@@ -266,22 +266,10 @@ typedef struct { // FlashCam envelope structure
 #define FCIOEvent  3
 #define FCIOStatus 4
 
-/*--- Structures  -----------------------------------------------*/
-
-typedef void* FCIOStream;
-
-/*--- Description ------------------------------------------------//
-
-An identifier for the FCIO connection.
-This item is returned by any connection to a file or tcp/ip
-stream and must be used in all further FCIO calls.
-
-//----------------------------------------------------------------*/
-
-
 //----------------------------------------------------------------*/
 
 // forward decls
+typedef void* FCIOStream;
 FCIOStream FCIOConnect(const char *name, int direction, int timeout, int buffer);
 int FCIODisconnect(FCIOStream x);
 int FCIOWriteMessage(FCIOStream x, int tag);
@@ -558,6 +546,19 @@ stream based I/O system.
 
 Please refer to the first part FCIO Structured I/O
 if you are reading FlashCam data only and skip the rest of this document
+
+//----------------------------------------------------------------*/
+
+
+/*--- Structures  -----------------------------------------------*/
+
+typedef void* FCIOStream;
+
+/*--- Description ------------------------------------------------//
+
+An identifier for the FCIO connection.
+This item is returned by any connection to a file or tcp/ip
+stream and must be used in all further FCIO calls.
 
 //----------------------------------------------------------------*/
 
