@@ -101,8 +101,8 @@ and may be set before initialization of a context structure.
 
 ///// Header ///////////////////////////////////////////////////////
 
-#define FCIOWriteInt(x,i)       ({ int data=(int)(i); FCIOWrite(x,sizeof(int),&data); })
-#define FCIOWriteFloat(x,f)     ({ float data=(int)(f); FCIOWrite(x,sizeof(float),&data); })
+#define FCIOWriteInt(x,i)       { int data=(int)(i); FCIOWrite(x,sizeof(int),&data); }
+#define FCIOWriteFloat(x,f)     { float data=(int)(f); FCIOWrite(x,sizeof(float),&data); }
 #define FCIOWriteInts(x,s,i)    FCIOWrite(x,(s)*sizeof(int),(void*)(i))
 #define FCIOWriteFloats(x,s,f)  FCIOWrite(x,(s)*sizeof(float),(void*)(f))
 #define FCIOWriteUShorts(x,s,i) FCIOWrite(x,(s)*sizeof(short int),(void*)(i))
@@ -266,10 +266,22 @@ typedef struct { // FlashCam envelope structure
 #define FCIOEvent  3
 #define FCIOStatus 4
 
+/*--- Structures  -----------------------------------------------*/
+
+typedef void* FCIOStream;
+
+/*--- Description ------------------------------------------------//
+
+An identifier for the FCIO connection.
+This item is returned by any connection to a file or tcp/ip
+stream and must be used in all further FCIO calls.
+
+//----------------------------------------------------------------*/
+
+
 //----------------------------------------------------------------*/
 
 // forward decls
-typedef void* FCIOStream;
 FCIOStream FCIOConnect(const char *name, int direction, int timeout, int buffer);
 int FCIODisconnect(FCIOStream x);
 int FCIOWriteMessage(FCIOStream x, int tag);
@@ -546,19 +558,6 @@ stream based I/O system.
 
 Please refer to the first part FCIO Structured I/O
 if you are reading FlashCam data only and skip the rest of this document
-
-//----------------------------------------------------------------*/
-
-
-/*--- Structures  -----------------------------------------------*/
-
-typedef void* FCIOStream;
-
-/*--- Description ------------------------------------------------//
-
-An identifier for the FCIO connection.
-This item is returned by any connection to a file or tcp/ip
-stream and must be used in all further FCIO calls.
 
 //----------------------------------------------------------------*/
 
