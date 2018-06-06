@@ -216,7 +216,7 @@ typedef struct {  // Readout status (~1 Hz, programmable)
   // the environment vars are:
 
   // 5 Temps in mDeg
-  // 5 Voltages in mV
+  // 6 Voltages in mV
   // 1 main current in mA
   // 1 humidity in o/oo
   // 2 Temps from adc cards in mDeg
