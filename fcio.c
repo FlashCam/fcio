@@ -52,7 +52,6 @@ extern "C" {
 
 //----------------------------------------------------------------*/
 
-#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -523,12 +522,10 @@ switch(tag)
 
   case FCIOEvent:
   {
-    assert(!x->event.timestamp[4]);
     FCIOReadInt(xio,x->event.type);
     FCIOReadFloat(xio,x->event.pulser);
     FCIOReadInts(xio,10,x->event.timeoffset);
     FCIOReadInts(xio,10,x->event.timestamp);
-    assert(!x->event.timestamp[4]);
     FCIOReadUShorts(xio,2304*4002,x->event.traces);
     FCIOReadInts(xio,10,x->event.deadregion);
 
@@ -1130,12 +1127,10 @@ static int get_next_record(FCIOStateReader *reader)
 
   case FCIOEvent:
     event = &reader->events[reader->cur_event];
-    assert(!event->timestamp[4]);
     FCIOReadInt(stream, event->type);
     FCIOReadFloat(stream, event->pulser);
     FCIOReadInts(stream, 10, event->timeoffset);
     FCIOReadInts(stream, 10, event->timestamp);
-    assert(!event->timestamp[4]);
     FCIOReadUShorts(stream, 2304 * 4002, event->traces);
     FCIOReadInts(stream, 10, event->deadregion);
 
