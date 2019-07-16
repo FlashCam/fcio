@@ -174,7 +174,7 @@ typedef struct {    // Calibration data and results (typically once at start of 
 } fcio_calib;
 
 typedef struct {  // Raw event
-  int type;                       // 1: Generic event, 2: calibration event
+  int type;                       // 1: Generic event, 2: calibration event, 3: simtel traces
 
   float pulser;                   // Used pulser amplitude in case of calibration event
 
@@ -198,12 +198,52 @@ typedef struct {  // Raw event
   int timestamp[10];              // [0] Event no., [1] PPS, [2] ticks, [3] max. ticks
                                   // [5-9] dummies reserved for future use
 
+  int ntimeoffset;
+  int ntimestamp;
+  int ndeadregion;
   unsigned short *trace[FCIOMaxChannels];    // Accessors for trace samples
   unsigned short *theader[FCIOMaxChannels];  // Accessors for traces incl. header bytes
                                   // (FPGA baseline, FPGA integrator)
 
   unsigned short traces[FCIOMaxChannels * (FCIOMaxSamples + 2)];  // internal trace storage
+
 } fcio_event;
+
+typedef struct {  // Reconstructed event
+  int type;                       // 1: Generic event, 2: calibration event, 3: simtel true p.e., 4: merged simtel true p.e.
+
+  float pulser;                   // Used pulser amplitude in case of calibration event
+
+  int timeoffset[10];             // [0] the offset in sec between the master and unix
+                                  // [1] the offset in usec between master and unix
+                                  // [2] the calculated sec which must be added to the master
+                                  // [3] the delta time between master and unix in usec
+                                  // [4] the abs(time) between master and unix in usec
+                                  // [5-9] reserved for future use
+
+  int deadregion[10];             // [0] start pps of the next dead window
+                                  // [1] start ticks of the next dead window
+                                  // [2] stop pps of the next dead window
+                                  // [3] stop ticks of the next dead window
+                                  // [4] maxticks of the dead window
+                                  // the values are updated by each event but
+                                  // stay at the previous value if no new dead region
+                                  // has been detected. The dead region window
+                                  // can define a window in the future
+
+  int timestamp[10];              // [0] Event no., [1] PPS, [2] ticks, [3] max. ticks
+                                  // [5-9] dummies reserved for future use
+
+  int ntimeoffset;
+  int ntimestamp;
+  int ndeadregion;
+
+  int totalpulses;
+  int npulses[FCIOMaxChannels];
+  int flags[FCIOMaxChannels * FCIOMaxSamples];
+  float times[FCIOMaxChannels * FCIOMaxSamples];
+  float amplitudes[FCIOMaxChannels * FCIOMaxSamples];
+} fcio_recevent;
 
 typedef struct {  // Readout status (~1 Hz, programmable)
   int status;         // 0: Errors occured, 1: no errors
@@ -244,11 +284,13 @@ typedef struct {
   fcio_calib *calib;
   fcio_event *event;
   fcio_status *status;
+  fcio_recevent *recevent;
 
   int nconfigs;
   int ncalibs;
   int nevents;
   int nstatus;
+  int nrecevents;
 } FCIODataBuffer;
 
 
@@ -260,11 +302,13 @@ typedef struct { // FlashCam envelope structure
   fcio_calib calib;
   fcio_event event;
   fcio_status status;
+  fcio_recevent recevent;
 
   int nconfigs;
   int ncalibs;
   int nevents;
   int nstatus;
+  int nrecevents;
 
   FCIODataBuffer *buffers;
   int nbuffers;
@@ -277,11 +321,12 @@ typedef struct { // FlashCam envelope structure
 #define FCIOCalib  2
 #define FCIOEvent  3
 #define FCIOStatus 4
+#define FCIORecEvent 5
 
+typedef void* FCIOStream;
 //----------------------------------------------------------------*/
 
 // forward decls
-typedef void* FCIOStream;
 FCIOStream FCIOConnect(const char *name, int direction, int timeout, int buffer);
 int FCIODisconnect(FCIOStream x);
 int FCIOWriteMessage(FCIOStream x, int tag);
@@ -429,11 +474,138 @@ void update_buffer(FCIOData *x, int tag)
     x->cur_buf = (x->cur_buf + 1) % x->nbuffers;
     // TODO: Copy state
     break;
+
+  case FCIORecEvent:
+    if (!buf->recevent)
+      buf->recevent = malloc(sizeof(fcio_recevent));
+    // Should this be optimised like FCIOEvent?
+    memcpy(buf->recevent, &x->recevent, sizeof(fcio_recevent));
+    break;
   }
 
 /*  fprintf(stderr, "%i\n", x->cur_buf);
   fflush(stderr);*/
 }
+
+/*=== Function ===================================================*/
+
+int FCIOPutRecord(FCIOStream *output, FCIOData* input, int tag)
+
+/*--- Description ------------------------------------------------//
+
+Writes a record of data from FCIOData struct to peer of file.
+A record consist of a message tag and all data items stored under
+this tag.
+
+valid record tags are
+
+#define FCIOConfig 1
+#define FCIOCalib  2
+#define FCIOEvent  3
+#define FCIOStatus 4
+#define FCIORecEvent 5
+
+returns the tag (>0) on success or <0 on error.
+
+note: the structure is not complete up to now and will be extended by
+further items.
+
+TODO: Consistend FCIOFlush return handling.
+
+//----------------------------------------------------------------*/
+{
+  if (!output){
+    fprintf(stderr, "FCIOPutRecord/ERROR: Output not connected.\n");
+    return -1;
+  }
+
+  switch (tag) {
+    case FCIOEvent: {
+      FCIOWriteMessage(output,FCIOEvent);
+      FCIOWriteInt(output,input->event.type);
+      FCIOWriteFloat(output,input->event.pulser);
+      FCIOWriteInts(output, input->event.ntimeoffset, input->event.timeoffset);
+      FCIOWriteInts(output, input->event.ntimestamp, input->event.timestamp);
+      FCIOWriteUShorts(output,(input->config.adcs+input->config.triggers)*(input->config.eventsamples+2),input->event.traces);
+      FCIOWriteInts(output, input->event.ndeadregion, input->event.deadregion);
+      FCIOFlush(output);
+
+    }
+    break;
+
+    case FCIORecEvent:
+    {
+      FCIOWriteMessage(output,FCIORecEvent);
+      FCIOWriteInt(output, input->recevent.type);
+      FCIOWriteFloat(output, input->recevent.pulser);
+      FCIOWriteInts(output, input->recevent.ntimeoffset, input->recevent.timeoffset);
+      FCIOWriteInts(output, input->recevent.ntimestamp, input->recevent.timestamp);
+      FCIOWriteInts(output, input->recevent.ndeadregion, input->recevent.deadregion);
+      FCIOWriteInts(output, input->config.adcs, input->recevent.npulses);
+      FCIOWriteInts(output, input->recevent.totalpulses, input->recevent.flags);
+      FCIOWriteFloats(output, input->recevent.totalpulses, input->recevent.amplitudes);
+      FCIOWriteFloats(output, input->recevent.totalpulses, input->recevent.times);
+      FCIOFlush(output);
+
+    }
+    break;
+
+    case FCIOConfig: {
+      FCIOWriteMessage(output,FCIOConfig);
+      FCIOWriteInt(output,input->config.adcs);
+      FCIOWriteInt(output,input->config.triggers);
+      FCIOWriteInt(output,input->config.eventsamples);
+      FCIOWriteInt(output,input->config.blprecision);
+      FCIOWriteInt(output,input->config.sumlength);
+      FCIOWriteInt(output,input->config.adcbits);
+      FCIOWriteInt(output,input->config.mastercards);
+      FCIOWriteInt(output,input->config.triggercards);
+      FCIOWriteInt(output,input->config.adccards);
+      FCIOWriteInt(output,input->config.gps);
+      FCIOFlush(output);
+
+    }
+    break;
+
+    case FCIOStatus: {
+      FCIOWriteMessage(output, FCIOStatus);
+      FCIOWriteInt(output,input->status.status);
+      FCIOWriteInts(output,5,input->status.statustime);
+      FCIOWriteInt(output,input->status.cards);
+      FCIOWriteInt(output,input->status.size);
+      for(int i=0;i<input->status.cards;i++) FCIOWrite(output,input->status.size,(void*)&input->status.data[i]);
+      FCIOFlush(output);
+
+    }
+    break;
+
+    case FCIOCalib: {
+      int adcs=input->config.adcs;
+      FCIOWriteMessage(output, FCIOCalib);
+      FCIOWriteInt(output,input->calib.status);
+      FCIOWriteInt(output,input->calib.upsample);
+      FCIOWriteInt(output,input->calib.presamples);
+      FCIOWriteFloat(output,input->calib.pulseramp);
+      FCIOWriteFloat(output,input->calib.threshold);
+      FCIOWriteFloats(output,adcs,input->calib.pz);
+      FCIOWriteFloats(output,adcs,input->calib.bl);
+      FCIOWriteFloats(output,adcs,input->calib.pos);
+      FCIOWriteFloats(output,adcs,input->calib.max);
+      FCIOWriteFloats(output,adcs,input->calib.maxrms);
+      int calchan=input->config.adcs;
+      int calsamples=input->config.eventsamples*input->calib.upsample;
+      // check the boundaries
+      FCIOWriteFloats(output,calchan*calsamples,input->calib.tracebuf);
+      FCIOWriteFloats(output,calchan*calsamples,input->calib.ptracebuf);
+      FCIOFlush(output);
+
+    }
+    break;
+  }
+
+  return tag;
+}
+
 
 /*=== Function ===================================================*/
 
@@ -451,6 +623,7 @@ valid record tags are
 #define FCIOCalib  2
 #define FCIOEvent  3
 #define FCIOStatus 4
+#define FCIORecEvent 5
 
 returns the tag (>0) on success or 0 on timeout and <0 on error.
 
@@ -524,10 +697,10 @@ switch(tag)
   {
     FCIOReadInt(xio,x->event.type);
     FCIOReadFloat(xio,x->event.pulser);
-    FCIOReadInts(xio,10,x->event.timeoffset);
-    FCIOReadInts(xio,10,x->event.timestamp);
+    x->event.ntimeoffset = FCIOReadInts(xio,10,x->event.timeoffset)/sizeof(int);
+    x->event.ntimestamp = FCIOReadInts(xio,10,x->event.timestamp)/sizeof(int);
     FCIOReadUShorts(xio,FCIOMaxChannels*(FCIOMaxSamples + 2),x->event.traces);
-    FCIOReadInts(xio,10,x->event.deadregion);
+    x->event.ndeadregion = FCIOReadInts(xio,10,x->event.deadregion)/sizeof(int);
 
     if(debug>3)
     {
@@ -537,6 +710,29 @@ switch(tag)
       fprintf(stderr,"\n");
     }
     x->nevents++;
+  }
+  break;
+
+  case FCIORecEvent:
+  {
+    FCIOReadInt(xio,x->recevent.type);
+    FCIOReadFloat(xio,x->recevent.pulser);
+    x->recevent.ntimeoffset = FCIOReadInts(xio,10,x->recevent.timeoffset)/sizeof(int);
+    x->recevent.ntimestamp = FCIOReadInts(xio,10,x->recevent.timestamp)/sizeof(int);
+    x->recevent.ndeadregion = FCIOReadInts(xio,10,x->recevent.deadregion)/sizeof(int);
+    FCIOReadInts(xio,FCIOMaxChannels,x->recevent.npulses);
+    FCIOReadInts(xio,FCIOMaxChannels*FCIOMaxSamples,x->recevent.flags);
+    FCIOReadFloats(xio,FCIOMaxChannels*FCIOMaxSamples,x->recevent.amplitudes);
+    x->recevent.totalpulses = FCIOReadFloats(xio,FCIOMaxChannels*FCIOMaxSamples,x->recevent.times)/sizeof(float);
+
+    if(debug>3)
+    {
+      fprintf(stderr,"FCIOGetRecord: recevent type %d pulser %g, offset %d %d %d timestamp ",
+          x->recevent.type,x->recevent.pulser,x->recevent.timeoffset[0],x->recevent.timeoffset[1],x->recevent.timeoffset[2]);
+      int i; for(i=0;i<10;i++) fprintf(stderr," %d",x->recevent.timestamp[i]);
+      fprintf(stderr,"\n");
+    }
+    x->nrecevents++;
   }
   break;
 
@@ -915,16 +1111,16 @@ int FCIORead(FCIOStream x, int size, void *data)
 
 read a data item of size bytes length.
 data must point to the data buffer where data is copied to.
-returns 1 on success or 0 on error
+returns tmio frame_size (in bytes) on success or 0 on error
 
 //----------------------------------------------------------------*/
 {
 tmio_stream *xio=(tmio_stream *)x;
 if(xio==0) return 0;
-tmio_read_data(xio, data, size);
+int frame_size = tmio_read_data(xio, data, size);
 if(tmio_status(xio)<0 && debug>0) fprintf(stderr,"FCIORead/WARNING: reading data of size %d\n",size);
 else if(debug>5) fprintf(stderr,"FCIORead: size %d @ %lx \n",size,(long)xio);
-return 1;
+return frame_size;
 }
 
 
@@ -935,6 +1131,7 @@ typedef struct {
   fcio_calib *calib;
   fcio_event *event;
   fcio_status *status;
+  fcio_recevent *recevent;
   int last_tag;
 } FCIOState;
 
@@ -952,16 +1149,19 @@ typedef struct {
   int ncalibs;
   int nevents;
   int nstatuses;
+  int nrecevents;
 
   int cur_config;
   int cur_calib;
   int cur_event;
   int cur_status;
+  int cur_recevent;
 
   fcio_config *configs;
   fcio_calib *calibs;
   fcio_event *events;
   fcio_status *statuses;
+  fcio_recevent *recevents;
 } FCIOStateReader;
 
 //----------------------------------------------------------------*/
@@ -1007,11 +1207,14 @@ FCIOStateReader *FCIOCreateStateReader(
   reader->calibs = calloc(state_buffer_depth + 1, sizeof(fcio_calib));
   reader->events = calloc(state_buffer_depth + 1, sizeof(fcio_event));
   reader->statuses = calloc(state_buffer_depth + 1, sizeof(fcio_status));
+  reader->recevents = calloc(state_buffer_depth + 1, sizeof(fcio_recevent));
 
-  if (reader->states && reader->configs && reader->calibs && reader->events && reader->statuses)
+  if (reader->states && reader->configs && reader->calibs && reader->events && reader->statuses && reader->recevents)
     return reader;  // Success
 
   // Clean up
+  if (reader->recevents)
+    free(reader->recevents);
   if (reader->statuses)
     free(reader->statuses);
   if (reader->events)
@@ -1039,6 +1242,7 @@ int FCIODestroyStateReader(FCIOStateReader *reader)
     return -1;
 
   FCIODisconnect(reader->stream);
+  free(reader->recevents);
   free(reader->statuses);
   free(reader->events);
   free(reader->calibs);
@@ -1059,7 +1263,7 @@ int FCIOSelectStateTag(FCIOStateReader *reader, int tag)
 {
   if (!tag)
     reader->selected_tags = 0xffffffff;
-  else if (tag >= FCIOConfig && tag <= FCIOStatus)
+  else if (tag >= FCIOConfig && tag <= FCIORecEvent)
     reader->selected_tags |= (1 << tag);
   else
     return -1;
@@ -1077,7 +1281,7 @@ int FCIODeselectStateTag(FCIOStateReader *reader, int tag)
 {
   if (!tag)
     reader->selected_tags = 0;
-  else if (tag > 0 && tag <= FCIOStatus)
+  else if (tag > 0 && tag <= FCIORecEvent)
     reader->selected_tags &= ~(1 << tag);
   else
     return -1;
@@ -1088,7 +1292,7 @@ int FCIODeselectStateTag(FCIOStateReader *reader, int tag)
 
 static int tag_selected(FCIOStateReader *reader, int tag)
 {
-  if (tag <= 0 || tag >= FCIOStatus)
+  if (tag <= 0 || tag >= FCIORecEvent)
     return 0;
 
   return reader->selected_tags & (1 << tag);
@@ -1106,6 +1310,7 @@ static int get_next_record(FCIOStateReader *reader)
   fcio_config *config = reader->nconfigs ? &reader->configs[(reader->cur_config + reader->max_states - 1) % reader->max_states] : NULL;
   fcio_event *event = reader->nevents ? &reader->events[(reader->cur_event + reader->max_states - 1) % reader->max_states] : NULL;
   fcio_status *status = reader->nstatuses ? &reader->statuses[(reader->cur_status + reader->max_states - 1) % reader->max_states] : NULL;
+  fcio_recevent *recevent = reader->nrecevents ? &reader->recevents[(reader->cur_recevent + reader->max_states - 1) % reader->max_states] : NULL;
 
   switch (tag) {
   case FCIOConfig:
@@ -1147,6 +1352,22 @@ static int get_next_record(FCIOStateReader *reader)
     reader->nevents++;
     break;
 
+  case FCIORecEvent:
+    recevent = &reader->recevents[reader->cur_recevent];
+    FCIOReadInt(stream, recevent->type);
+    FCIOReadFloat(stream, recevent->pulser);
+    FCIOReadInts(stream, 10, recevent->timeoffset);
+    FCIOReadInts(stream, 10, recevent->timestamp);
+    FCIOReadInts(stream, 10, recevent->deadregion);
+    FCIOReadInts(stream, FCIOMaxChannels, recevent->npulses);
+    FCIOReadInts(stream, FCIOMaxChannels * (FCIOMaxSamples + 2), recevent->flags);
+    FCIOReadFloats(stream, FCIOMaxChannels * (FCIOMaxSamples + 2), recevent->times);
+    FCIOReadFloats(stream, FCIOMaxChannels * (FCIOMaxSamples + 2), recevent->amplitudes);
+
+    reader->cur_recevent = (reader->cur_recevent + 1) % reader->max_states;
+    reader->nrecevents++;
+    break;
+
   case FCIOStatus:
     status = &reader->statuses[reader->cur_status];
     FCIOReadInt(stream, status->status);
@@ -1169,6 +1390,7 @@ static int get_next_record(FCIOStateReader *reader)
   state->config = config;
   state->event = event;
   state->status = status;
+  state->recevent = recevent;
   state->last_tag = tag;
 
   // Advance state buffer
@@ -1227,11 +1449,12 @@ FCIOState *FCIOGetState(FCIOStateReader *reader, int offset)
 
     if (!--offset) {
       if (debug > 4)
-        fprintf(stderr, "FCIOGetState: Found record [cur_state=%i, config=%p, calib=%p, event=%p, status=%p].\n", reader->cur_state,
+        fprintf(stderr, "FCIOGetState: Found record [cur_state=%i, config=%p, calib=%p, event=%p, status=%p, recevent=%p].\n", reader->cur_state,
           get_last_state(reader)->config,
           get_last_state(reader)->calib,
           get_last_state(reader)->event,
-          get_last_state(reader)->status);
+          get_last_state(reader)->status,
+          get_last_state(reader)->recevent);
       return get_last_state(reader);
     }
   }
