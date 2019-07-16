@@ -161,16 +161,16 @@ typedef struct {    // Calibration data and results (typically once at start of 
   int presamples;                // Used number of samples before pulse maxima
   float pulseramp;               // Used pulser amplitude (a.u.)
   float threshold;               // Used threshold for peak search (LSB)
-  float pz[2304];                // Estimated deconvolution parameters
-  float bl[2304];                // Average baselines during calibration (LSB)
-  float pos[2304];               // Average peak positions of calibration pulses (samples)
-  float max[2304];               // Average pulse heights of calibration pulses (LSB)
-  float maxrms[2304];            // RMS of the pulse heights of the calib. pulses (LSB)
-  float *traces[2304];           // Accessors for average traces
-  float *ptraces[2304];          // Accessors for average de-convolved traces
+  float pz[FCIOMaxChannels];                // Estimated deconvolution parameters
+  float bl[FCIOMaxChannels];                // Average baselines during calibration (LSB)
+  float pos[FCIOMaxChannels];               // Average peak positions of calibration pulses (samples)
+  float max[FCIOMaxChannels];               // Average pulse heights of calibration pulses (LSB)
+  float maxrms[FCIOMaxChannels];            // RMS of the pulse heights of the calib. pulses (LSB)
+  float *traces[FCIOMaxChannels];           // Accessors for average traces
+  float *ptraces[FCIOMaxChannels];          // Accessors for average de-convolved traces
 
-  float tracebuf[2304 * 4002];   // internal tracebuffer don't use
-  float ptracebuf[2304 * 4002];  // internal ptracebuffer don't use
+  float tracebuf[FCIOMaxChannels * (FCIOMaxSamples + 2)];   // internal tracebuffer don't use
+  float ptracebuf[FCIOMaxChannels * (FCIOMaxSamples + 2)];  // internal ptracebuffer don't use
 } fcio_calib;
 
 typedef struct {  // Raw event
@@ -198,11 +198,11 @@ typedef struct {  // Raw event
   int timestamp[10];              // [0] Event no., [1] PPS, [2] ticks, [3] max. ticks
                                   // [5-9] dummies reserved for future use
 
-  unsigned short *trace[2304];    // Accessors for trace samples
-  unsigned short *theader[2304];  // Accessors for traces incl. header bytes
+  unsigned short *trace[FCIOMaxChannels];    // Accessors for trace samples
+  unsigned short *theader[FCIOMaxChannels];  // Accessors for traces incl. header bytes
                                   // (FPGA baseline, FPGA integrator)
 
-  unsigned short traces[2304 * 4002];  // internal trace storage
+  unsigned short traces[FCIOMaxChannels * (FCIOMaxSamples + 2)];  // internal trace storage
 } fcio_event;
 
 typedef struct {  // Readout status (~1 Hz, programmable)
@@ -408,19 +408,19 @@ void update_buffer(FCIOData *x, int tag)
   case FCIOEvent:
     if (!buf->event)
       buf->event = malloc(sizeof(fcio_event));
-    // fprintf(stderr, "%i %i\n", 2304 * 4002, (x->config.adcs * (x->config.eventsamples + 2)));
+    // fprintf(stderr, "%i %i\n", FCIOMaxChannels * (FCIOMaxSamples + 2), (x->config.adcs * (x->config.eventsamples + 2)));
     //memcpy(buf->event, &x->event, sizeof(fcio_event) / 32);//
     //memcpy(buf->event, &x->event, (char *) &(x->event.trace) - (char *) &(x->event));
     //memcpy(buf->event->traces, &x->event.traces,
     //      sizeof(unsigned short) * (x->config.adcs * (x->config.eventsamples + 2)));
 
 /*    ssize_t offset = (unsigned short *) buf->event->traces - (unsigned short *) &x->event.traces;
-    for (int i = 0; i < 2304 && buf->event->theader[i]; i++) {
+    for (int i = 0; i < FCIOMaxChannels && buf->event->theader[i]; i++) {
       buf->event->theader[i] += offset;
       buf->event->trace[i] += offset;
     }*/
 
-    memcpy(buf->event, &x->event, sizeof(fcio_event) - 2 * 2304 * 4002 + 2 * x->config.adcs * (x->config.eventsamples + 2));
+    memcpy(buf->event, &x->event, sizeof(fcio_event) - 2 * FCIOMaxChannels * (FCIOMaxSamples + 2) + 2 * x->config.adcs * (x->config.eventsamples + 2));
     for(int i=0; i<x->config.adcs; i++) buf->event->trace[i]=&buf->event->traces[2+i*(x->config.eventsamples+2)];
     for(int i=0; i<x->config.adcs; i++) buf->event->theader[i]=&buf->event->traces[i*(x->config.eventsamples+2)];
     buf->nevents = x->nevents;
@@ -526,7 +526,7 @@ switch(tag)
     FCIOReadFloat(xio,x->event.pulser);
     FCIOReadInts(xio,10,x->event.timeoffset);
     FCIOReadInts(xio,10,x->event.timestamp);
-    FCIOReadUShorts(xio,2304*4002,x->event.traces);
+    FCIOReadUShorts(xio,FCIOMaxChannels*(FCIOMaxSamples + 2),x->event.traces);
     FCIOReadInts(xio,10,x->event.deadregion);
 
     if(debug>3)
@@ -1131,7 +1131,7 @@ static int get_next_record(FCIOStateReader *reader)
     FCIOReadFloat(stream, event->pulser);
     FCIOReadInts(stream, 10, event->timeoffset);
     FCIOReadInts(stream, 10, event->timestamp);
-    FCIOReadUShorts(stream, 2304 * 4002, event->traces);
+    FCIOReadUShorts(stream, FCIOMaxChannels * (FCIOMaxSamples + 2), event->traces);
     FCIOReadInts(stream, 10, event->deadregion);
 
     if (config) {
