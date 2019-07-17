@@ -198,9 +198,9 @@ typedef struct {  // Raw event
   int timestamp[10];              // [0] Event no., [1] PPS, [2] ticks, [3] max. ticks
                                   // [5-9] dummies reserved for future use
 
-  int timeoffset_size;
-  int timestamp_size;
-  int deadregion_size;
+  int timeoffset_size;            // actual size of the timeoffset array
+  int timestamp_size;             // actual size of the timestamp array
+  int deadregion_size;            // actual size of the deadregion array
   unsigned short *trace[FCIOMaxChannels];    // Accessors for trace samples
   unsigned short *theader[FCIOMaxChannels];  // Accessors for traces incl. header bytes
                                   // (FPGA baseline, FPGA integrator)
@@ -234,9 +234,9 @@ typedef struct {  // Reconstructed event
   int timestamp[10];              // [0] Event no., [1] PPS, [2] ticks, [3] max. ticks
                                   // [5-9] dummies reserved for future use
 
-  int timeoffset_size;
-  int timestamp_size;
-  int deadregion_size;
+  int timeoffset_size;            // actual size of the timeoffset array
+  int timestamp_size;             // actual size of the timestamp array
+  int deadregion_size;            // actual size of the deadregion array
 
   int totalpulses;
   int channel_pulses[FCIOMaxChannels];
@@ -297,8 +297,18 @@ typedef struct { // FlashCam envelope structure
 #define FCIOEvent  3
 #define FCIOStatus 4
 #define FCIORecEvent 5
+//----------------------------------------------------------------*/
+
+/*--- Structures  -----------------------------------------------*/
 
 typedef void* FCIOStream;
+
+/*--- Description ------------------------------------------------//
+
+An identifier for the FCIO connection.
+This item is returned by any connection to a file or tcp/ip
+stream and must be used in all further FCIO calls.
+
 //----------------------------------------------------------------*/
 
 // forward decls
@@ -386,6 +396,11 @@ returns 1 on success or 0 on error
 int FCIOPutConfig(FCIOStream *output, FCIOData *input)
 /*--- Description ------------------------------------------------//
 
+Writes a record of config data (struct fcio_config) to remote peer or file.
+A record consist of the message tag and all data members of the struct.
+
+Returns 1 on success or 0 on error.
+
 //----------------------------------------------------------------*/
 {
   if (!output){
@@ -411,6 +426,14 @@ int FCIOPutConfig(FCIOStream *output, FCIOData *input)
 int FCIOPutStatus(FCIOStream *output, FCIOData *input)
 /*--- Description ------------------------------------------------//
 
+Writes a record of config data (struct fcio_status) to remote peer or file.
+A record consist of the message tag and all data members of the struct.
+
+The size of status.data from individual cards is sent depending on
+status.cards and status.size.
+
+Returns 1 on success or 0 on error.
+
 //----------------------------------------------------------------*/
 {
   if (!output){
@@ -433,6 +456,17 @@ int FCIOPutStatus(FCIOStream *output, FCIOData *input)
 int FCIOPutCalib(FCIOStream *output, FCIOData *input)
 /*--- Description ------------------------------------------------//
 
+Writes a record of calib data (struct fcio_calib) to remote peer or file.
+A record consist of the message tag and all data members of the struct.
+
+The number of items in calib arrays pz / bl / pos / max / maxrms sent to
+remote depends on config.adcs.
+
+The number of items in tracebuf and ptracebuf depends on
+config.adcs * config.eventsamples * calib.upsample.
+
+Returns 1 on success or 0 on error.
+
 //----------------------------------------------------------------*/
 {
   if (!output){
@@ -452,11 +486,10 @@ int FCIOPutCalib(FCIOStream *output, FCIOData *input)
   FCIOWriteFloats(output, adcs, input->calib.pos);
   FCIOWriteFloats(output, adcs, input->calib.max);
   FCIOWriteFloats(output, adcs, input->calib.maxrms);
-  int calchan = input->config.adcs;
   int calsamples = input->config.eventsamples * input->calib.upsample;
   // check the boundaries
-  FCIOWriteFloats(output, calchan*calsamples, input->calib.tracebuf);
-  FCIOWriteFloats(output, calchan*calsamples, input->calib.ptracebuf);
+  FCIOWriteFloats(output, adcs*calsamples, input->calib.tracebuf);
+  FCIOWriteFloats(output, adcs*calsamples, input->calib.ptracebuf);
 
   return FCIOFlush(output);
 }
@@ -465,6 +498,16 @@ int FCIOPutCalib(FCIOStream *output, FCIOData *input)
 int FCIOPutEvent(FCIOStream *output, FCIOData *input)
 /*--- Description ------------------------------------------------//
 
+Writes a record of event data (struct fcio_event) to remote peer or file.
+A record consist of the message tag and all data members of the struct.
+
+The number of items in event.timeoffset, timestamp and deadregion sent
+to remote depends on their corresponding *_size items.
+
+The number of items in event.traces sent to remote depends on
+(config.adcs + config.triggers) * (config.eventsamples+2).
+
+Returns 1 on success or 0 on error.
 
 //----------------------------------------------------------------*/
 {
@@ -488,6 +531,19 @@ int FCIOPutEvent(FCIOStream *output, FCIOData *input)
 int FCIOPutRecEvent(FCIOStream *output, FCIOData *input)
 /*--- Description ------------------------------------------------//
 
+Writes a record of recevent data (struct fcio_recevent) to remote peer or file.
+A record consist of the message tag and all data members of the struct.
+
+The number of items in event.timeoffset, timestamp and deadregion sent
+to remote depends on their corresponding *_size items.
+
+The number of items in recevent.channel_pulses depends on config.adcs.
+
+The number of items in recevent.flags, recevent.amplitudes and recevent.times
+depends on recevent.totalpulses.
+
+Returns 1 on success or 0 on error.
+
 //----------------------------------------------------------------*/
 {
   if (!output){
@@ -500,6 +556,7 @@ int FCIOPutRecEvent(FCIOStream *output, FCIOData *input)
   FCIOWriteInts(output, input->recevent.timeoffset_size, input->recevent.timeoffset);
   FCIOWriteInts(output, input->recevent.timestamp_size, input->recevent.timestamp);
   FCIOWriteInts(output, input->recevent.deadregion_size, input->recevent.deadregion);
+  FCIOWriteInt(output, input->recevent.totalpulses);
   FCIOWriteInts(output, input->config.adcs, input->recevent.channel_pulses);
   FCIOWriteInts(output, input->recevent.totalpulses, input->recevent.flags);
   FCIOWriteFloats(output, input->recevent.totalpulses, input->recevent.amplitudes);
@@ -515,7 +572,9 @@ int FCIOPutRecord(FCIOStream *output, FCIOData* input, int tag)
 
 /*--- Description ------------------------------------------------//
 
-Wrapper function to the individual FCIOPut function family.
+Writes a record of data to remote peer or file.
+A record consist of a message tag and all data items stored under
+this tag.
 
 valid record tags are
 
@@ -525,7 +584,11 @@ valid record tags are
 #define FCIOStatus 4
 #define FCIORecEvent 5
 
-returns 1 on success or 0 on error.
+This function wraps the family of FCIOPut<Event/RecEvent/Config/Status/Calib>
+functions.
+Refer to their documentation for more details.
+
+Returns the return value of the individual FICOPut functions or 0 on unknown tag.
 
 //----------------------------------------------------------------*/
 {
@@ -635,10 +698,16 @@ static inline void fcio_get_recevent(FCIOStream *stream, fcio_recevent *recevent
   recevent->timeoffset_size = FCIOReadInts(stream,10,recevent->timeoffset)/sizeof(int);
   recevent->timestamp_size = FCIOReadInts(stream,10,recevent->timestamp)/sizeof(int);
   recevent->deadregion_size = FCIOReadInts(stream,10,recevent->deadregion)/sizeof(int);
+  FCIOReadInt(stream, recevent->totalpulses);
   FCIOReadInts(stream,FCIOMaxChannels,recevent->channel_pulses);
-  FCIOReadInts(stream,FCIOMaxChannels*FCIOMaxSamples,recevent->flags);
-  FCIOReadFloats(stream,FCIOMaxChannels*FCIOMaxSamples,recevent->amplitudes);
-  recevent->totalpulses = FCIOReadFloats(stream,FCIOMaxChannels*FCIOMaxSamples,recevent->times)/sizeof(float);
+  int flags_size = FCIOReadInts(stream,FCIOMaxChannels*FCIOMaxSamples,recevent->flags)/sizeof(int);
+  int amplitudes_size = FCIOReadFloats(stream,FCIOMaxChannels*FCIOMaxSamples,recevent->amplitudes)/sizeof(float);
+  int times_size = FCIOReadFloats(stream,FCIOMaxChannels*FCIOMaxSamples,recevent->times)/sizeof(float);
+
+  if ( (flags_size != amplitudes_size) || (amplitudes_size != times_size) || (times_size != recevent->totalpulses)) {
+    fprintf(stderr, "fcio_get_recevent/WARNING: Mismatch in pulse parameter sizes: totalpulses %d flags %d amplitudes %d times %d\n",
+      recevent->totalpulses, flags_size, amplitudes_size, times_size);
+  }
 
   if (debug > 3) {
     fprintf(stderr,"fcio_get_recevent: type %d pulser %g, offset %d %d %d timestamp ",
@@ -685,6 +754,7 @@ further items.
     case FCIOConfig: {
       fcio_get_config(xio, &x->config);
 
+      // On config, the pointers can be set.
       for (int i = 0; i < x->config.adcs + x->config.triggers; i++) {
         x->event.trace[i] = &x->event.traces[2 + i * (x->config.eventsamples + 2)];
         x->event.theader[i] = &x->event.traces[i * (x->config.eventsamples + 2)];
@@ -772,6 +842,10 @@ while((iotag=FCIOGetRecord(x))>0)
     }
     break;
 
+    case FCIORecEvent:  // reconstructed event record
+    // do something here
+    break;
+
     default:
     fprintf(stderr,"record tag %d... skipped \n",iotag);
     break;
@@ -797,17 +871,7 @@ if you are reading FlashCam data only and skip the rest of this document
 //----------------------------------------------------------------*/
 
 
-/*--- Structures  -----------------------------------------------//
 
-typedef void* FCIOStream;
-
-//--- Description ------------------------------------------------//
-
-An identifier for the FCIO connection.
-This item is returned by any connection to a file or tcp/ip
-stream and must be used in all further FCIO calls.
-
-//----------------------------------------------------------------*/
 
 
 /*=== Function ===================================================*/
