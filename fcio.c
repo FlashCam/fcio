@@ -701,9 +701,9 @@ static inline void fcio_get_recevent(FCIOStream *stream, fcio_recevent *recevent
   recevent->deadregion_size = FCIOReadInts(stream,10,recevent->deadregion)/sizeof(int);
   FCIOReadInt(stream, recevent->totalpulses);
   FCIOReadInts(stream,FCIOMaxChannels,recevent->channel_pulses);
-  int flags_size = FCIOReadInts(stream,FCIOMaxChannels*FCIOMaxSamples,recevent->flags)/sizeof(int);
-  int amplitudes_size = FCIOReadFloats(stream,FCIOMaxChannels*FCIOMaxSamples,recevent->amplitudes)/sizeof(float);
-  int times_size = FCIOReadFloats(stream,FCIOMaxChannels*FCIOMaxSamples,recevent->times)/sizeof(float);
+  int flags_size = FCIOReadInts(stream,FCIOMaxPulses,recevent->flags)/sizeof(int);
+  int amplitudes_size = FCIOReadFloats(stream,FCIOMaxPulses,recevent->amplitudes)/sizeof(float);
+  int times_size = FCIOReadFloats(stream,FCIOMaxPulses,recevent->times)/sizeof(float);
 
   if ( (flags_size != amplitudes_size) || (amplitudes_size != times_size) || (times_size != recevent->totalpulses)) {
     fprintf(stderr, "fcio_get_recevent/WARNING: Mismatch in pulse parameter sizes: totalpulses %d flags %d amplitudes %d times %d\n",
