@@ -138,8 +138,9 @@ readers of the FCIO files/streams
 
 /*--- Structures  -----------------------------------------------*/
 
-#define FCIOMaxChannels 2304
-#define FCIOMaxSamples  4000
+#define FCIOMaxChannels 2304  // the architectural limit for fc250b
+#define FCIOMaxSamples  4000  // for firmware v2, max trace length is 3900 samples
+#define FCIOMaxPulses   (FCIOMaxChannels*11000)  // support up to 11,000 p.e. per channel
 
 typedef struct {  // Readout configuration (typically once at start of run)
   int telid;                     // CTA-wide identifier of this camera
@@ -240,9 +241,9 @@ typedef struct {  // Reconstructed event
 
   int totalpulses;
   int channel_pulses[FCIOMaxChannels];
-  int flags[FCIOMaxChannels * FCIOMaxSamples];
-  float times[FCIOMaxChannels * FCIOMaxSamples];
-  float amplitudes[FCIOMaxChannels * FCIOMaxSamples];
+  int flags[FCIOMaxPulses];
+  float times[FCIOMaxPulses];
+  float amplitudes[FCIOMaxPulses];
 } fcio_recevent;
 
 typedef struct {  // Readout status (~1 Hz, programmable)
