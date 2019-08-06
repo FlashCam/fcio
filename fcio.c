@@ -355,17 +355,17 @@ Returns a FCIOData structure or 0 on error.
   FCIOData *x=(FCIOData*)calloc(1,sizeof(FCIOData));
   if(!x)
   {
-    if(debug) fprintf(stderr,"FCIOInitData/ERROR: can not init structure\n");
+    if(debug) fprintf(stderr,"FCIOOpen/ERROR: can not init structure\n");
     return 0;
   }
   x->ptmio=(void*)FCIOConnect(name,'r',timeout,buffer);
   if(x->ptmio==0)
   {
-    if(debug) fprintf(stderr,"FCIOInitData: can not connect to data source %s \n",(name)?name:"(NULL)");
+    if(debug) fprintf(stderr,"FCIOOpen: can not connect to data source %s \n",(name)?name:"(NULL)");
     free(x);
     return 0;
   }
-  if(debug>2) fprintf(stderr,"FCIOInitData: io structure initialized, size %ld KB\n",(long)sizeof(FCIOData)/1024);
+  if(debug>2) fprintf(stderr,"FCIOOpen: io structure initialized, size %ld KB\n",(long)sizeof(FCIOData)/1024);
   return x;
 }
 
