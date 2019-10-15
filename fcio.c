@@ -966,6 +966,23 @@ return 1;
 
 }
 
+
+/*=== Function ===================================================*/
+
+int FCIOTimeout(FCIOStream x, int timeout_ms)
+
+/*--- Description ------------------------------------------------//
+
+Sets the timeout for I/O operations in milliseconds.
+
+Returns the previously set timeout.
+
+//----------------------------------------------------------------*/
+{
+  return tmio_timeout((tmio_stream *) x, timeout_ms);
+}
+
+
 /*=== Writing Messages ===========================================//
 
 For getting the maximum speed during write messages will be composed
