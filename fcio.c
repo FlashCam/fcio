@@ -394,7 +394,7 @@ returns 1 on success or 0 on error
 }
 
 /*=== Function ===================================================*/
-int FCIOPutConfig(FCIOStream *output, FCIOData *input)
+int FCIOPutConfig(FCIOStream output, FCIOData *input)
 /*--- Description ------------------------------------------------//
 
 Writes a record of config data (struct fcio_config) to remote peer or file.
@@ -424,7 +424,7 @@ Returns 1 on success or 0 on error.
 }
 
 /*=== Function ===================================================*/
-int FCIOPutStatus(FCIOStream *output, FCIOData *input)
+int FCIOPutStatus(FCIOStream output, FCIOData *input)
 /*--- Description ------------------------------------------------//
 
 Writes a record of config data (struct fcio_status) to remote peer or file.
@@ -454,7 +454,7 @@ Returns 1 on success or 0 on error.
 }
 
 /*=== Function ===================================================*/
-int FCIOPutCalib(FCIOStream *output, FCIOData *input)
+int FCIOPutCalib(FCIOStream output, FCIOData *input)
 /*--- Description ------------------------------------------------//
 
 Writes a record of calib data (struct fcio_calib) to remote peer or file.
@@ -496,7 +496,7 @@ Returns 1 on success or 0 on error.
 }
 
 /*=== Function ===================================================*/
-int FCIOPutEvent(FCIOStream *output, FCIOData *input)
+int FCIOPutEvent(FCIOStream output, FCIOData *input)
 /*--- Description ------------------------------------------------//
 
 Writes a record of event data (struct fcio_event) to remote peer or file.
@@ -529,7 +529,7 @@ Returns 1 on success or 0 on error.
 }
 
 /*=== Function ===================================================*/
-int FCIOPutRecEvent(FCIOStream *output, FCIOData *input)
+int FCIOPutRecEvent(FCIOStream output, FCIOData *input)
 /*--- Description ------------------------------------------------//
 
 Writes a record of recevent data (struct fcio_recevent) to remote peer or file.
@@ -569,7 +569,7 @@ Returns 1 on success or 0 on error.
 
 /*=== Function ===================================================*/
 
-int FCIOPutRecord(FCIOStream *output, FCIOData* input, int tag)
+int FCIOPutRecord(FCIOStream output, FCIOData* input, int tag)
 
 /*--- Description ------------------------------------------------//
 
@@ -612,7 +612,7 @@ Returns the return value of the individual FICOPut functions or 0 on unknown tag
   return 0;
 }
 
-static inline void fcio_get_config(FCIOStream *stream, fcio_config *config)
+static inline void fcio_get_config(FCIOStream stream, fcio_config *config)
 {
   FCIOReadInt(stream,config->adcs);
   FCIOReadInt(stream,config->triggers);
@@ -631,7 +631,7 @@ static inline void fcio_get_config(FCIOStream *stream, fcio_config *config)
       config->adcs,config->triggers,config->eventsamples,config->adcbits,config->blprecision,config->sumlength,config->gps);
 }
 
-static inline void fcio_get_status(FCIOStream *stream, fcio_status *status)
+static inline void fcio_get_status(FCIOStream stream, fcio_status *status)
 {
   FCIOReadInt(stream,status->status);
   FCIOReadInts(stream,5,status->statustime);
@@ -658,7 +658,7 @@ static inline void fcio_get_status(FCIOStream *stream, fcio_status *status)
   }
 }
 
-static inline void fcio_get_calib(FCIOStream *stream, fcio_calib *calib)
+static inline void fcio_get_calib(FCIOStream stream, fcio_calib *calib)
 {
   FCIOReadInt(stream, calib->status);
   FCIOReadInt(stream, calib->upsample);
@@ -674,7 +674,7 @@ static inline void fcio_get_calib(FCIOStream *stream, fcio_calib *calib)
   FCIOReadFloats(stream, FCIOMaxChannels*FCIOMaxSamples, calib->ptracebuf);
 }
 
-static inline void fcio_get_event(FCIOStream *stream, fcio_event *event)
+static inline void fcio_get_event(FCIOStream stream, fcio_event *event)
 {
   FCIOReadInt(stream,event->type);
   FCIOReadFloat(stream,event->pulser);
@@ -692,7 +692,7 @@ static inline void fcio_get_event(FCIOStream *stream, fcio_event *event)
   }
 }
 
-static inline void fcio_get_recevent(FCIOStream *stream, fcio_recevent *recevent)
+static inline void fcio_get_recevent(FCIOStream stream, fcio_recevent *recevent)
 {
   FCIOReadInt(stream,recevent->type);
   FCIOReadFloat(stream,recevent->pulser);
@@ -1113,7 +1113,7 @@ typedef struct {
 } FCIOState;
 
 typedef struct {
-  void *stream;
+  FCIOStream stream;
 
   int nrecords;
   int max_states;
@@ -1181,12 +1181,12 @@ FCIOStateReader *FCIOCreateStateReader(
   FCIOSelectStateTag(reader, 0);
 
   reader->max_states = state_buffer_depth + 1;
-  reader->states = calloc(state_buffer_depth + 1, sizeof(FCIOState));
-  reader->configs = calloc(state_buffer_depth + 1, sizeof(fcio_config));
-  reader->calibs = calloc(state_buffer_depth + 1, sizeof(fcio_calib));
-  reader->events = calloc(state_buffer_depth + 1, sizeof(fcio_event));
-  reader->statuses = calloc(state_buffer_depth + 1, sizeof(fcio_status));
-  reader->recevents = calloc(state_buffer_depth + 1, sizeof(fcio_recevent));
+  reader->states = (FCIOState*) calloc(state_buffer_depth + 1, sizeof(FCIOState));
+  reader->configs = (fcio_config*) calloc(state_buffer_depth + 1, sizeof(fcio_config));
+  reader->calibs = (fcio_calib*) calloc(state_buffer_depth + 1, sizeof(fcio_calib));
+  reader->events = (fcio_event*) calloc(state_buffer_depth + 1, sizeof(fcio_event));
+  reader->statuses = (fcio_status*) calloc(state_buffer_depth + 1, sizeof(fcio_status));
+  reader->recevents = (fcio_recevent*) calloc(state_buffer_depth + 1, sizeof(fcio_recevent));
 
   if (reader->states && reader->configs && reader->calibs && reader->events && reader->statuses && reader->recevents)
     return reader;  // Success
