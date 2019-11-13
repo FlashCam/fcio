@@ -1121,6 +1121,7 @@ typedef struct {
   FCIOState *states;
 
   unsigned int selected_tags;
+  int timeout;
 
   int nconfigs;
   int ncalibs;
@@ -1167,6 +1168,7 @@ FCIOStateReader *FCIOCreateStateReader(
     return (FCIOStateReader *) NULL;
   }
 
+  reader->timeout = io_timeout;
   reader->stream = (void *) FCIOConnect(peer, 'r', io_timeout, io_buffer_size);
   if (!reader->stream) {
     if (debug)
@@ -1276,9 +1278,23 @@ static int tag_selected(FCIOStateReader *reader, int tag)
 }
 
 
+int FCIOWaitMessage(FCIOStream x, int tmo)
+{
+  tmio_stream *xio=(tmio_stream *)x;
+  if(xio==0) return -1;
+  return tmio_wait(xio, tmo);
+}
+
+
 static int get_next_record(FCIOStateReader *reader)
 {
   FCIOStream stream = reader->stream;
+
+  switch (FCIOWaitMessage(stream, reader->timeout)) {
+    case 1: break;
+    case 0: return 0;
+    default: return -1;
+  }
 
   int tag = FCIOReadMessage(stream);
   if (debug > 4)
@@ -1331,6 +1347,9 @@ static int get_next_record(FCIOStateReader *reader)
     reader->nstatuses++;
     break;
 
+  case 0:
+    return 0;
+
   default:
     return -1;
   }
@@ -1361,7 +1380,7 @@ inline FCIOState *get_last_state(FCIOStateReader *reader)
 
 /*=== Function ===================================================*/
 
-FCIOState *FCIOGetState(FCIOStateReader *reader, int offset)
+FCIOState *FCIOGetState(FCIOStateReader *reader, int offset, int *timedout)
 
 /*--- Description ------------------------------------------------//
 //----------------------------------------------------------------*/
@@ -1393,7 +1412,7 @@ FCIOState *FCIOGetState(FCIOStateReader *reader, int offset)
     fprintf(stderr, "FCIOGetState: Trying to read %i records from stream...\n", offset);
 
   int tag = 0;
-  while ((tag = get_next_record(reader)) && tag >= 0) {
+  while ((tag = get_next_record(reader)) && tag > 0) {
     if (!tag_selected(reader, tag))
       continue;
 
@@ -1409,6 +1428,12 @@ FCIOState *FCIOGetState(FCIOStateReader *reader, int offset)
     }
   }
 
+  if (tag == 0) {
+    if (timedout)
+      *timedout = 1;
+    return NULL;
+  }
+
   // End-of-stream has been reached
   if (debug > 4)
     fprintf(stderr, "FCIOGetState: End-of-stream reached with %i events outstanding.\n", offset);
@@ -1417,12 +1442,12 @@ FCIOState *FCIOGetState(FCIOStateReader *reader, int offset)
 
 /*=== Function ===================================================*/
 
-FCIOState *FCIOGetNextState(FCIOStateReader *reader)
+FCIOState *FCIOGetNextState(FCIOStateReader *reader, int *timedout)
 
 /*--- Description ------------------------------------------------//
 //----------------------------------------------------------------*/
 {
-  return FCIOGetState(reader, 1);
+  return FCIOGetState(reader, 1, timedout);
 }
 
 
