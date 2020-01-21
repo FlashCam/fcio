@@ -1385,6 +1385,9 @@ FCIOState *FCIOGetState(FCIOStateReader *reader, int offset, int *timedout)
 /*--- Description ------------------------------------------------//
 //----------------------------------------------------------------*/
 {
+  if (timedout)
+    *timedout = 0;
+
   if (debug > 4)
     fprintf(stderr, "FCIOGetState(reader, %i): max_states=%i, cur_state=%i\n", offset, reader->max_states, reader->cur_state);
 
