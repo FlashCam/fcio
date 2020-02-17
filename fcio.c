@@ -55,6 +55,7 @@ extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "timer.h"
 #include "tmio.h"
 
 static int debug=2;
@@ -1286,11 +1287,11 @@ int FCIOWaitMessage(FCIOStream x, int tmo)
 }
 
 
-static int get_next_record(FCIOStateReader *reader)
+static int get_next_record(FCIOStateReader *reader, int timeout)
 {
   FCIOStream stream = reader->stream;
 
-  switch (FCIOWaitMessage(stream, reader->timeout)) {
+  switch (FCIOWaitMessage(stream, timeout)) {
     case 1: break;
     case 0: return 0;
     default: return -1;
@@ -1415,9 +1416,23 @@ FCIOState *FCIOGetState(FCIOStateReader *reader, int offset, int *timedout)
     fprintf(stderr, "FCIOGetState: Trying to read %i records from stream...\n", offset);
 
   int tag = 0;
-  while ((tag = get_next_record(reader)) && tag > 0) {
-    if (!tag_selected(reader, tag))
-      continue;
+  int timeout = reader->timeout;
+  double start_time = reader->timeout > 0 ? timer(0.0) : 0.0;  // track time only when a timeout is requested
+  while ((tag = get_next_record(reader, timeout)) && tag > 0) {
+    if (!tag_selected(reader, tag)) {
+      // Avoid infinitely waiting for a selected tag when there are other records in between
+      // that always arrive within the given timeout
+      if (reader->timeout > 0) {
+        double elapsed_msec = 1000.0 * timer(start_time);
+        timeout = reader->timeout - elapsed_msec + 0.5;
+        if (timeout < 0) {
+          tag = 0;
+          break;  // avoid passing -1 (wait indefinitely) to tmio_wait
+        }
+      }
+
+      continue;  // skip tag
+    }
 
     if (!--offset) {
       if (debug > 4)
