@@ -1366,6 +1366,7 @@ static int get_next_record(FCIOStateReader *reader, int timeout)
   // Advance state buffer
   if (tag_selected(reader, tag)) {
     reader->cur_state = (reader->cur_state + 1) % reader->max_states;
+    reader->states[reader->cur_state].last_tag = 0;
     reader->nrecords++;
   }
 
@@ -1420,6 +1421,8 @@ FCIOState *FCIOGetState(FCIOStateReader *reader, int offset, int *timedout)
   double start_time = reader->timeout > 0 ? timer(0.0) : 0.0;  // track time only when a timeout is requested
   while ((tag = get_next_record(reader, timeout)) && tag > 0) {
     if (!tag_selected(reader, tag)) {
+      *timedout = 2;  // deselected tags arrived
+
       // Avoid infinitely waiting for a selected tag when there are other records in between
       // that always arrive within the given timeout
       if (reader->timeout > 0) {
@@ -1447,8 +1450,8 @@ FCIOState *FCIOGetState(FCIOStateReader *reader, int offset, int *timedout)
   }
 
   if (tag == 0) {
-    if (timedout)
-      *timedout = 1;
+    if (timedout && !*timedout)
+      *timedout = 1;  // no deselected tags arrived before timeout was reached - otherwise timedout = 2
     return NULL;
   }
 
