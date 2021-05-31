@@ -1421,7 +1421,8 @@ FCIOState *FCIOGetState(FCIOStateReader *reader, int offset, int *timedout)
   double start_time = reader->timeout > 0 ? timer(0.0) : 0.0;  // track time only when a timeout is requested
   while ((tag = get_next_record(reader, timeout)) && tag > 0) {
     if (!tag_selected(reader, tag)) {
-      *timedout = 2;  // deselected tags arrived
+      if (timedout)
+        *timedout = 2;  // deselected tags arrived
 
       // Avoid infinitely waiting for a selected tag when there are other records in between
       // that always arrive within the given timeout
@@ -1438,6 +1439,9 @@ FCIOState *FCIOGetState(FCIOStateReader *reader, int offset, int *timedout)
     }
 
     if (!--offset) {
+      if (timedout)
+        *timedout = 0;  // timedout may have been set to 2 from an interleaved deselected tag
+
       if (debug > 4)
         fprintf(stderr, "FCIOGetState: Found record [cur_state=%i, config=%p, calib=%p, event=%p, status=%p, recevent=%p].\n", reader->cur_state,
           get_last_state(reader)->config,
