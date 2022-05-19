@@ -1,9 +1,8 @@
 
-/* examples/timer.h
-
-Generated automatically on Tue Jan 26 12:44:11 CET 2016 from examples/timer.c.
-*/
-
+/*========================================================//
+date:    Tue Aug 25 12:49:41 CEST 2020
+sources: Libs-mcl/timer-1.0/timer.c
+//========================================================*/
 #ifndef __TIMER_H__
 #define __TIMER_H__
 

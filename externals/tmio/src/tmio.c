@@ -473,7 +473,7 @@ TMIO_EPROTO     Protocols do not match
   }
 
   // Copy protocol from peer
-  strncpy(stream->protocol, protocol, strlen(protocol));
+  strncpy(stream->protocol, protocol, TMIO_PROTOCOL_SIZE); //  strlen(protocol));
 
   if (stream->debug > 1)
     fprintf(stderr, "tmio_open: connected file/peer %s\n", name);
