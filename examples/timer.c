@@ -138,17 +138,17 @@ Returns > 0 if input is present on time out.
 }
 
 
-
+/*
 #ifdef   CLOCKS_PER_SEC
 #if      CLOCKS_PER_SEC < 1000
 #define  CLOCKTICKS  CLOCKS_PER_SEC
 #endif
 #endif
-
-#ifndef  CLOCKTICKS
+*/
+// #ifndef  CLOCKTICKS
 #include <sys/resource.h>
 #include <unistd.h>
-#endif
+// #endif
 
 /*=== Function ===================================================*/
 

@@ -1,3 +1,4 @@
+#define _DEFAULT_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -9,6 +10,7 @@
 #include "timer.h"
 
 
+
 int main(int argc, char *argv[])
 {
   if (argc != 5) {
@@ -18,7 +20,7 @@ int main(int argc, char *argv[])
 
   char mode = argv[1][0] == 'w' ? 'w' : 'r';
   char *address = argv[2];
-  unsigned long message_size = atoi(argv[3]) > (int) sizeof(int) ? atoi(argv[3]) : sizeof(int);
+  unsigned long message_size = (atoi(argv[3]) > (int) sizeof(int)) ? (unsigned long)atoi(argv[3]) : sizeof(int);
   unsigned long message_count = atoi(argv[4]);
   unsigned long payload_size = message_size > sizeof(int) ? message_size - sizeof(int) : 0;
 
