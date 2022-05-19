@@ -1498,10 +1498,10 @@ experimental....
 
       if (debug > 4)
         fprintf(stderr, "FCIOGetState: Found record [cur_state=%i, config=%p, event=%p, status=%p, recevent=%p].\n", reader->cur_state,
-          get_last_state(reader)->config,
-          get_last_state(reader)->event,
-          get_last_state(reader)->status,
-          get_last_state(reader)->recevent);
+          (void*)get_last_state(reader)->config,
+          (void*)get_last_state(reader)->event,
+          (void*)get_last_state(reader)->status,
+          (void*)get_last_state(reader)->recevent);
 
       return get_last_state(reader);
     }
