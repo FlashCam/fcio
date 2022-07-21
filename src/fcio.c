@@ -139,11 +139,15 @@ readers of the FCIO files/streams
 
 /*--- Structures  -----------------------------------------------*/
 
-#define FCIOMaxChannels 2400                     // the architectural limit for fc250b 12*8*24 adcch + 12*8 trgch.  
-#define FCIOMaxSamples  10000                    // for firmware v2, max trace length is 8k samples, ge version: 32K
-#define FCIOMaxPulses   (FCIOMaxChannels*11000)  // support up to 11,000 p.e. per channel
+#define FCIOMaxChannels 2400                    // the architectural limit for fc250b 12*8*24 adcch + 12*8 trgch.
+#define FCIOMaxSamples  32768                   // for firmware v2, max trace length is 8K samples for PMT firmware version (250Mhz)
+                                                // while the Germanium version (62.5Mhz) suppports 32K samples.
+#define FCIOMaxPulses   (FCIOMaxChannels*11000) // support up to 11,000 p.e. per channel
 
-#define FCIOMaxDWords   (FCIOMaxChannels*(FCIOMaxSamples+2)) 
+#define FCIOTraceBufferLength   (672 * (FCIOMaxSamples+2)) // In GE version 4 channels are combined into one -> 6 channels per card instead of 24:
+                                                           // Reduces the channel limit to 12 * 8 * 6 adc channels + 12 * 6 trigger channels
+                                                           // This means, the maximum needed buffer size is either 2400 * 8192 = 19660800 samples or 672 * 32768 = 22020096.
+#define FCIOMaxDWords FCIOTraceBufferLength     // For backwards compatibility
 
 typedef struct {                 // Readout configuration (typically once at start of run)
 
@@ -159,6 +163,7 @@ typedef struct {                 // Readout configuration (typically once at sta
   int adccards;                  // Number of FADC cards
   int gps;                       // GPS mode flag (0: not used, 1: sync PPS and 10 MHz)
   unsigned int tracemap[FCIOMaxChannels]; // trace map identifiers - fadc/triggercard addresses and channels
+                                          // stores the FADC and Trigger card addresses as follows: (address << 16) + adc channel (channel number on the card)
 
 } fcio_config;
 
@@ -188,20 +193,23 @@ typedef struct {                  // Raw event
                                   // can define a window in the future
 
   int timestamp[10];              // [0] Event no., [1] PPS, [2] ticks, [3] max. ticks
+                                  // [4] reserved for trigger mask in fc250b v2
                                   // [5-9] dummies reserved for future use
 
   int timeoffset_size;            // actual size of the timeoffset array
   int timestamp_size;             // actual size of the timestamp array
 
   int deadregion_size;            // actual size of the deadregion array
-  
-  int num_traces;                                // number of traces written on sparse data
-  unsigned short trace_list[FCIOMaxChannels];  // list of written traces on sparse data   
+
+  int num_traces;                              // used for sparse mode (FCIOSparseEvent); num_traces contains the length of the trace_list array.
+  unsigned short trace_list[FCIOMaxChannels];  // list of updated trace indices while writing/reading in sparse mode (FCIOSparseEvent)
+                                               // this index list contains the valid trace[] fields which are allowed to access.
+                                               // adc channels / traces which are not listed here contain the traces from the previous FCIOSparseEvent while reading!
 
   unsigned short *trace[FCIOMaxChannels];        // Accessors for trace samples
   unsigned short *theader[FCIOMaxChannels];      // Accessors for traces incl. header bytes
                                                  // (FPGA baseline, FPGA integrator)
-  unsigned short traces[FCIOMaxDWords];          // internal trace storage
+  unsigned short traces[FCIOTraceBufferLength];  // internal trace storage
 
 } fcio_event;
 
@@ -233,6 +241,7 @@ typedef struct {                  // Reconstructed event
                                   // can define a window in the future
 
   int timestamp[10];              // [0] Event no., [1] PPS, [2] ticks, [3] max. ticks
+                                  // [4] reserved for trigger mask in fc250b v2
                                   // [5-9] dummies reserved for future use
 
   int timeoffset_size;            // actual size of the timeoffset array
