@@ -140,7 +140,7 @@ readers of the FCIO files/streams
 /*--- Structures  -----------------------------------------------*/
 
 #define FCIOMaxChannels 2400                    // the architectural limit for fc250b 12*8*24 adcch + 12*8 trgch.
-#define FCIOMaxSamples  32768                   // for firmware v2, max trace length is 8K samples for PMT firmware version (250Mhz)
+#define FCIOMaxSamples  32768                   // max trace length is 8K samples for PMT firmware version (250Mhz)
                                                 // while the Germanium version (62.5Mhz) suppports 32K samples.
 #define FCIOMaxPulses   (FCIOMaxChannels*11000) // support up to 11,000 p.e. per channel
 
@@ -178,19 +178,27 @@ typedef struct {                  // Raw event
                                   // [2] the calculated sec which must be added to the master
                                   // [3] the delta time between master and unix in usec
                                   // [4] the abs(time) between master and unix in usec
-                                  // [5-9] reserved for future use
+                                  // [5] startsec
+                                  // [6] startusec
+                                  // [7-9] reserved for future use
 
   int deadregion[10];             // [0] start pps of the next dead window
                                   // [1] start ticks of the next dead window
                                   // [2] stop pps of the next dead window
                                   // [3] stop ticks of the next dead window
                                   // [4] maxticks of the dead window
-                                  // [5] sparse event adc channel block beginning
-                                  // [6] sparse event adc channel block end
+                                  // [5] sparse event adc channel block beginning (see below)
+                                  // [6] sparse event adc channel block end (see below)
                                   // the values are updated by each event but
                                   // stay at the previous value if no new dead region
                                   // has been detected. The dead region window
                                   // can define a window in the future
+                                  // channel block:
+                                  // Due to firmware implementation details, deadtime affects all
+                                  // channels on a triggered ADC module even in sparse readout mode.
+                                  // Fields 5 and 6 specify the index of the first trace that is affected
+                                  // by deadtime and the number of consecutive traces.
+                                  // In normal readout mode and in some sparse readout configurations this covers all traces.
 
   int timestamp[10];              // [0] Event no., [1] PPS, [2] ticks, [3] max. ticks
                                   // [4] reserved for trigger mask in fc250b v2
@@ -233,12 +241,18 @@ typedef struct {                  // Reconstructed event
                                   // [2] stop pps of the next dead window
                                   // [3] stop ticks of the next dead window
                                   // [4] maxticks of the dead window
-                                  // [5] sparse event adc channel block beginning
-                                  // [6] sparse event adc channel block end
+                                  // [5] sparse event adc channel block beginning (see below)
+                                  // [6] sparse event adc channel block end (see below)
                                   // the values are updated by each event but
                                   // stay at the previous value if no new dead region
                                   // has been detected. The dead region window
                                   // can define a window in the future
+                                  // channel block:
+                                  // Due to firmware implementation details, deadtime affects all
+                                  // channels on a triggered ADC module even in sparse readout mode.
+                                  // Fields 5 and 6 specify the index of the first trace that is affected
+                                  // by deadtime and the number of consecutive traces.
+                                  // In normal readout mode and in some sparse readout configurations this covers all traces.
 
   int timestamp[10];              // [0] Event no., [1] PPS, [2] ticks, [3] max. ticks
                                   // [4] reserved for trigger mask in fc250b v2
