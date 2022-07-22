@@ -8,6 +8,7 @@ build_images = {
     "CentOS 7": "centos-7-devtools",
     "CentOS 8": "centos-8-devtools",
     "Rocky Linux 8": "rockylinux-8-devtools",
+    "Rocky Linux 9": "rockylinux-9-devtools",
 }
 
 
