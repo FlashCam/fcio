@@ -7,6 +7,7 @@ build_images = {
     "Ubuntu 22.04": "ubuntu-22.04-devtools",
     "CentOS 7": "centos-7-devtools",
     "CentOS 8": "centos-8-devtools",
+    "Rocky Linux 8": "rockylinux-8-devtools",
 }
 
 
