@@ -1,5 +1,6 @@
 build_images = {
     "Debian 9": "debian-9-devtools",
+    "Debian 10": "debian-10-devtools",
     "Ubuntu 18.04": "ubuntu-18.04-devtools",
     "Ubuntu 20.04": "ubuntu-20.04-devtools",
     "Ubuntu 22.04": "ubuntu-22.04-devtools",
