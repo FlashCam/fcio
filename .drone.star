@@ -2,6 +2,7 @@ build_images = {
     "Debian 9": "debian-9-devtools",
     "Ubuntu 18.04": "ubuntu-18.04-devtools",
     "CentOS 7": "centos-7-devtools",
+    "CentOS 8": "centos-8-devtools",
 }
 
 
