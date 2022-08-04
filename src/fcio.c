@@ -1341,7 +1341,7 @@ experimental....
 
 static int tag_selected(FCIOStateReader *reader, int tag)
 {
-  if (tag <= 0 || tag >= FCIOSparseEvent)
+  if (tag <= 0 || tag > FCIOSparseEvent)
     return 0;
 
   return reader->selected_tags & (1 << tag);
@@ -1402,8 +1402,21 @@ static int get_next_record(FCIOStateReader *reader, int timeout)
     break;
 
   case FCIOSparseEvent:
-    // Not supported now
-    // TODO decide how to incorporate the SparseEvent into the StateReader framework.
+    event = &reader->events[reader->cur_event];
+    if (config) {
+      fcio_get_sparseevent(stream, event, config->eventsamples + 2);
+
+      for (int i = 0; i < event->num_traces; i++) {
+        int j = event->trace_list[i];
+        event->trace[j] = &event->traces[2 + j * (config->eventsamples + 2)];
+        event->theader[j] = &event->traces[j * (config->eventsamples + 2)];
+      }
+    } else {
+      fprintf(stderr, "[WARNING] Received sparse event without known configuration. Unable to adjust trace pointers.\n");
+    }
+
+    reader->cur_event = (reader->cur_event + 1) % reader->max_states;
+    reader->nevents++;
     break;
 
   case FCIORecEvent:
@@ -1448,7 +1461,7 @@ static int get_next_record(FCIOStateReader *reader, int timeout)
 }
 
 
-inline FCIOState *get_last_state(FCIOStateReader *reader)
+static inline FCIOState *get_last_state(FCIOStateReader *reader)
 {
   return &reader->states[(reader->cur_state + reader->max_states - 1) % reader->max_states];
 }
