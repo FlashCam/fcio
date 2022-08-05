@@ -1,18 +1,17 @@
 /*
+ * fcio: I/O functions for FlashCam data
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * Contact:
+ * - mailing list: fcio-maintainers@mpi-hd.mpg.de
+ * - upstream URL: https://www.mpi-hd.mpg.de/hinton/software
  */
 
 
 /*==> FCIO FlashCam I/O system <========================//
-
-//--- Version ---------------------------------------------------//
-
-Version:  1.0
-Date:     2014
-
-//----------------------------------------------------------------*/
 
 /*=== General Information =======================================//
 

@@ -1,16 +1,13 @@
 /*
+ * time_utils: Convenience functions for sleeping and timing
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */
-
-
-/*
- * time_utils.c: Convenience functions for sleeping and timing
  *
- * Version: 0.2
- * Date:    Oct. 2017
- * Author:  Felix Werner <Felix.Werner@mpi-hd.mpg.de>
+ * Contact:
+ * - main authors: felix.werner@mpi-hd.mpg.de
+ * - upstream URL: https://www.mpi-hd.mpg.de/hinton/software
  */
 
 #define _POSIX_C_SOURCE 200112L
