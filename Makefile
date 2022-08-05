@@ -169,11 +169,11 @@ define INCLUDE_SUBMAKEFILE
     TGT_CFLAGS    :=
     TGT_CXXFLAGS  :=
     TGT_DEFS      :=
-    TGT_INCDIRS   :=
     TGT_LINKER    :=
     TGT_POSTCLEAN :=
     TGT_POSTMAKE  :=
     # The following will come from the global stack:
+    # - TGT_INCDIRS
     # - TGT_PREREQS
     # - TGT_LDLIBS
     # - TGT_LDFLAGS
@@ -194,9 +194,17 @@ define INCLUDE_SUBMAKEFILE
 
     include ${1}
 
+    # Sanitize input, allows -I / -D prefix in the TGT_INCDIRS and TGT_DEFS
+    TGT_INCDIRS := $${TGT_INCDIRS:-I%=%}
+    SRC_INCDIRS := $${SRC_INCDIRS:-I%=%}
+    TGT_DEFS    := $${TGT_DEFS:-D%=%}
+    SRC_DEFS    := $${SRC_DEFS:-D%=%}
+
     # Push variables onto stacks
     PREREQS_STACK_P                   := $${PREREQS_STACK_P}.X
     PREREQS_STACK.$${PREREQS_STACK_P} := $${TGT_PREREQS}
+    INCDIRS_STACK_P                   := $${INCDIRS_STACK_P}.X
+    INCDIRS_STACK.$${INCDIRS_STACK_P} := $${TGT_INCDIRS}
     LDFLAGS_STACK_P                   := $${LDFLAGS_STACK_P}.X
     LDFLAGS_STACK.$${LDFLAGS_STACK_P} := $${TGT_LDFLAGS}
     LDLIBS_STACK_P                    := $${LDLIBS_STACK_P}.X
@@ -308,11 +316,13 @@ define INCLUDE_SUBMAKEFILE
 
     # Pop the stack-maintained build variables
     PREREQS_STACK_P := $(basename $${PREREQS_STACK_P})
-	TGT_PREREQS     := $${PREREQS_STACK.$(PREREQS_STACK_P)}
+    TGT_PREREQS     := $${PREREQS_STACK.$(PREREQS_STACK_P)}
+    INCDIRS_STACK_P := $(basename $${INCDIRS_STACK_P})
+    TGT_INCDIRS     := $${INCDIRS_STACK.$(INCDIRS_STACK_P)}
     LDFLAGS_STACK_P := $(basename $${LDFLAGS_STACK_P})
-	TGT_LDFLAGS     := $${LDFLAGS_STACK.$(LDFLAGS_STACK_P)}
+    TGT_LDFLAGS     := $${LDFLAGS_STACK.$(LDFLAGS_STACK_P)}
     LDLIBS_STACK_P  := $(basename $${LDLIBS_STACK_P})
-	TGT_LDLIBS      := $${LDLIBS_STACK.$(LDLIBS_STACK_P)}
+    TGT_LDLIBS      := $${LDLIBS_STACK.$(LDLIBS_STACK_P)}
 endef
 
 # MIN - Parameterized "function" that results in the minimum lexical value of
@@ -381,6 +391,8 @@ INCDIRS :=
 TGT_STACK :=
 PREREQS_STACK_P := X
 PREREQS_STACK.X :=
+INCDIRS_STACK_P := X
+INCDIRS_STACK.X :=
 LDLIBS_STACK_P := X
 LDLIBS_STACK.X :=
 LDFLAGS_STACK_P := X
@@ -390,9 +402,9 @@ LDFLAGS_STACK.X :=
 # all other user-supplied submakefiles.
 $(eval $(call INCLUDE_SUBMAKEFILE,Rules.mk))
 
-# Perform post-processing on global variables as needed.
-DEFS := $(addprefix -D,${DEFS})
-INCDIRS := $(addprefix -I,$(call CANONICAL_PATH,${INCDIRS}))
+# Perform post-processing on global variables as needed and sanitize input.
+DEFS := $(addprefix -D,${DEFS:-D%=%})
+INCDIRS := $(addprefix -I,$(call CANONICAL_PATH,${INCDIRS:-I%=%}))
 
 # Define the "all" target (which simply builds all user-defined targets) as the
 # default goal.
