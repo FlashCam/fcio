@@ -1,18 +1,17 @@
+/*
+ * bufio: buffered I/O for Unix streams
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * Contact:
+ * - main authors: felix.werner@mpi-hd.mpg.de
+ * - upstream URL: https://www.mpi-hd.mpg.de/hinton/software
+ */
+
+
 /*==> bufio: buffered I/O for Unix streams ===================================//
-
-Version: 0.9.4
-Date:    2015
-Authors: Thomas Kihm, Felix Werner
-
-//--- Copyright --------------------------------------------------------------//
-
-This software is furnished under a license and may be used and copied only in
-accordance with the terms of such license and with the inclusion of the above
-copyright notice.
-
-This software or any other copies thereof may not be provided or otherwise
-made available to any other person. No title to and ownership of the software
-is hereby transferred.
 
 //==> General information ====================================================//
 
