@@ -307,9 +307,9 @@ int FCIOSelectStateTag(FCIOStateReader *reader, int tag)
 ;
 int FCIODeselectStateTag(FCIOStateReader *reader, int tag)
 ;
-FCIOState *FCIOGetState(FCIOStateReader *reader, int offset)
+FCIOState *FCIOGetState(FCIOStateReader *reader, int offset, int *timedout)
 ;
-FCIOState *FCIOGetNextState(FCIOStateReader *reader)
+FCIOState *FCIOGetNextState(FCIOStateReader *reader, int *timedout)
 ;
 #ifdef __cplusplus
 }
