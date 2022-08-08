@@ -11,8 +11,6 @@
 
 int main(void)
 {
-  fprintf(stderr, "test_bufio_lockedfile: ");
-
   char buf[16];
 
   bufio_stream *so = bufio_open("lockedfile://test_bufio_lockedfile.dat", "w", 0, 8, NULL);
@@ -65,7 +63,5 @@ int main(void)
   // Clean up
   assert(bufio_close(si) == 0);
   assert(bufio_close(so) == 0);
-
-  fprintf(stderr, "pass\n");
   return 0;
 }

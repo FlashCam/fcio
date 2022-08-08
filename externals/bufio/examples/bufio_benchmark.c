@@ -36,12 +36,12 @@ double timer(double offset)
 
 int main(int argc, char *argv[])
 {
-  if (argc != 5) {
+  if (argc != 5 || strlen(argv[1]) != 1 || (argv[1][0] != 'w' && argv[1][0] != 'r')) {
     printf("usage: bufio_benchmark [w|r] address message_size message_count\n");
     return 1;
   }
 
-  char mode = argv[1][0] == 'w' ? 'w' : 'r';
+  char mode = argv[1][0];
   char *address = argv[2];
   unsigned long message_size = atoi(argv[3]);
   unsigned long message_count = atoi(argv[4]);
@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
     return 1;
   }
 
-  bufio_stream *s = bufio_open(address, "w+", 10000, 4096, NULL);
+  bufio_stream *s = bufio_open(address, argv[1], 10000, 4096, NULL);
   if (s == NULL) {
     fprintf(stderr, "failed to connect\n");
     return 1;
@@ -87,10 +87,10 @@ int main(int argc, char *argv[])
   double throughput = (double) message_count / (double) elapsed;
   double megabits = (double) (throughput * message_size * 8) / 1000000;
 
-  printf ("message size: %d [B]\n", (int) message_size);
-  printf ("message count: %d\n", (int) message_count);
-  printf ("mean throughput: %.3f [msg/s]\n", throughput);
-  printf ("mean throughput: %.3f [Mb/s]\n", megabits);
+  fprintf(stderr, "message size: %d [B]\n", (int) message_size);
+  fprintf(stderr, "message count: %d\n", (int) message_count);
+  fprintf(stderr, "mean throughput: %.3f [msg/s]\n", throughput);
+  fprintf(stderr, "mean throughput: %.3f [Mb/s]\n", megabits);
 
   usleep(50000);
 
