@@ -1,3 +1,0 @@
-[submodule "externals/bufio"]
-	path = externals/bufio
-	url = https://git.mpi-hd.mpg.de/fwerner/bufio.git
