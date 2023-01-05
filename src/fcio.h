@@ -217,14 +217,14 @@ typedef struct {                   // FlashCam envelope structure
 
 } FCIOData;
 
-// valid record tags ... all other tags are skipped
-
-#define FCIOConfig       1
-#define FCIOCalib        2  // not any longer supported 
-#define FCIOEvent        3
-#define FCIOStatus       4
-#define FCIORecEvent     5
-#define FCIOSparseEvent  6
+typedef enum {
+  FCIOConfig = 1,
+  FCIOCalib = 2, // deprecated
+  FCIOEvent = 3,
+  FCIOStatus = 4,
+  FCIORecEvent = 5,
+  FCIOSparseEvent = 6
+} FCIOTag;
 
 typedef void* FCIOStream;
 
@@ -261,6 +261,8 @@ int FCIOFlush(FCIOStream x)
 int FCIOReadMessage(FCIOStream x)
 ;
 int FCIORead(FCIOStream x, int size, void *data)
+;
+int FCIOWaitMessage(FCIOStream x, int tmo)
 ;
 
 typedef struct {

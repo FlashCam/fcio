@@ -13,7 +13,7 @@
 
 /*==> FCIO FlashCam I/O system <========================//
 
-/*=== General Information =======================================//
+//=== General Information =======================================//
 
 This Library is used to read and write messages with the FlashCam
 I/O system.
@@ -328,12 +328,14 @@ typedef struct {                   // FlashCam envelope structure
 
 // valid record tags ... all other tags are skipped
 
-#define FCIOConfig       1
-#define FCIOCalib        2  // not any longer supported 
-#define FCIOEvent        3
-#define FCIOStatus       4
-#define FCIORecEvent     5
-#define FCIOSparseEvent  6
+typedef enum {
+  FCIOConfig = 1,
+  FCIOCalib = 2, // deprecated
+  FCIOEvent = 3,
+  FCIOStatus = 4,
+  FCIORecEvent = 5,
+  FCIOSparseEvent = 6
+} FCIOTag;
 
 //----------------------------------------------------------------*/
 
@@ -1353,8 +1355,30 @@ static int tag_selected(FCIOStateReader *reader, int tag)
   return reader->selected_tags & (1 << tag);
 }
 
+/*=== Function ===============================================================*/
 
 int FCIOWaitMessage(FCIOStream x, int tmo)
+
+/*--- Description ------------------------------------------------------------//
+
+This function is useful in case the coarse timeout set for I/O operations is
+not sufficient for fine-grained waiting and polling.
+
+If timeout is greater than zero, it specifies a maximum interval (in
+milliseconds) to wait for data to arrive. If timeout is 0, then FCIOWaitMessage()
+will return without blocking -- use this to quickly check for data in the
+input buffers. If the value of timeout is -1, the poll blocks indefinitely.
+
+In the current implementation the timeout is restarted on the arrival of each
+frame.
+
+//--- Return values ----------------------------------------------------------//
+
+-1 an error occured or the connection is broken
+ 0 no input data is present after the given timeout
+ 1 message is present
+
+//----------------------------------------------------------------------------*/
 {
   tmio_stream *xio=(tmio_stream *)x;
   if(xio==0) return -1;
@@ -1483,7 +1507,7 @@ experimental....
 
 //----------------------------------------------------------------*/
 {
-    if (timedout)
+  if (timedout)
     *timedout = 0;
 
   if (debug > 4)
