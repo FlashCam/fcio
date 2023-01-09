@@ -1,6 +1,11 @@
 # Installation
 
-Run `make` to produce the C header file `include/fcio.h` and the static library `lib/fcio.a`.
+Clone this repository with `git clone --recurse-submodule https://mpi-hd.mpg.de/hinton/software/fcio`.
+
+Run `make` to produce the C header file `include/fcio.h` and the static library `lib/fcio.a`, and it's dependencies `lib/bufio.a` and `lib/tmio.a`.
+
+Run `make prefix=<path-to-install> install` to install header (`$prefix/include`) and libraries (`$prefix/lib/`). `prefix` does not have a default and _needs_ to be set explicitely.
+
 
 # Contributing
 
@@ -12,13 +17,7 @@ The `Makefile` provided to build this project is licensed under the GNU General 
 
 # Development
 
-The `tmio` and `bufio` dependencies are pulled into the repository as git subtrees, not submodules, to provide an
-all-in-one repository to build fcio. Both dependencies are compiled directly into `libfcio.a`.
-
-To update from their origins run `scripts/subtree_pull_origin.sh`; this should only be necessary for developers!
-
-To push commits in the subdirectories upstream run `git subtree push --prefix externals/$repo $repo $branch`. In our
-case `$repo` is either `tmio` or `bufio` and `$branch` probably `master`.
+The `tmio` and `bufio` dependencies are pulled into the repository as git submodules.
 
 # Contact
 
