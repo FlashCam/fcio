@@ -41,7 +41,12 @@ ifndef ECHO
           ECHO="__MK_COUNT__" | grep -c "__MK_COUNT__")
     N := x
     C = $(words $N)$(eval N := x $N)
-    ECHO = printf "[$C/$T]
+    UNAME_S := $(shell uname -s)
+    ifeq ($(UNAME_S),Linux)
+      ECHO = /usr/bin/printf "[$C/$T]
+    else
+      ECHO = printf "[$c/$T]
+    endif
 endif
 
 # Control verbosity via VERBOSE environment variable
@@ -435,3 +440,6 @@ $(foreach TGT,${ALL_TGTS},\
 # Include generated rules that define additional (header) dependencies.
 $(foreach TGT,${ALL_TGTS},\
   $(eval -include ${${TGT}_DEPS}))
+
+# We reset the default target to all; this makes usage of `.DEFAULT_GOAL` within submakefiles impossible.
+.DEFAULT_GOAL := all
