@@ -1,7 +1,5 @@
 # Installation
 
-Clone this repository with `git clone --recurse-submodule https://mpi-hd.mpg.de/hinton/software/fcio`.
-
 Run `make` to produce the C header file `include/fcio.h` and the static library `lib/fcio.a`, and it's dependencies `lib/bufio.a` and `lib/tmio.a`.
 
 Run `make prefix=<path-to-install> install` to install header (`$prefix/include`) and libraries (`$prefix/lib/`). `prefix` does not have a default and _needs_ to be set explicitely.
