@@ -12,6 +12,6 @@ def test_system_precision():
     Not clear if converting to string a good way to test.
   """
   import numpy as np
-  
+
   assert str(np.iinfo(np.int64).max) == "9223372036854775807"
   assert str(np.iinfo(np.int64).min) == "-9223372036854775808"

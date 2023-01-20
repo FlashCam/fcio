@@ -1,5 +1,6 @@
 import cppyy
 import numpy as np
+import sysconfig
 
 try:
     from importlib.resources import files as import_files
@@ -8,48 +9,46 @@ except ImportError:
 
 package_base = import_files("fcio")
 fcio_header_path = (package_base / "include" / "fcio.h")
-
-import sysconfig
-
 fcio_lib_path = (package_base / f"fcio_c{sysconfig.get_config_vars('SO')[0]}")
 
 cppyy.include(str(fcio_header_path))
 cppyy.load_library(str(fcio_lib_path))
 
+
 class Event:
   def __init__(self, raw_event_struct, config):
-    self.buffer  = raw_event_struct
+    self.buffer = raw_event_struct
     self.config = config
     self.nadcs = self.config.nadcs
     self.nsamples = self.config.nsamples
     self.ntriggers = self.config.ntriggers
 
     self._baseline = np.ndarray(buffer=self.buffer.traces,
-                        dtype=np.uint16,
-                        shape=(self.nadcs, ),
-                        offset=0,
-                        strides=((self.nsamples+2) * 2,))
+                                dtype=np.uint16,
+                                shape=(self.nadcs, ),
+                                offset=0,
+                                strides=((self.nsamples+2) * 2,))
     self._baseline.setflags(write=False)
 
     self._integrator = np.ndarray(buffer=self.buffer.traces,
-                          dtype=np.uint16,
-                          shape=(self.nadcs, ),
-                          offset=2,
-                          strides=((self.nsamples+2) * 2,))
+                                  dtype=np.uint16,
+                                  shape=(self.nadcs, ),
+                                  offset=2,
+                                  strides=((self.nsamples+2) * 2,))
     self._integrator.setflags(write=False)
 
     self._traces = np.ndarray(buffer=self.buffer.traces,
-                        dtype=np.uint16,
-                        shape=(self.nadcs, self.nsamples),
-                        offset=4,
-                        strides=( (self.nsamples+2) * 2, 2))
+                              dtype=np.uint16,
+                              shape=(self.nadcs, self.nsamples),
+                              offset=4,
+                              strides=((self.nsamples+2) * 2, 2))
     self._traces.setflags(write=False)
 
     self._triggertraces = np.ndarray(buffer=self.buffer.traces,
-                              dtype=np.uint16,
-                              shape=(self.config.ntriggers,self.nsamples),
-                              offset=((self.nsamples+2) * self.nadcs) * 2 + 4,
-                              strides=((self.nsamples+2) * 2, 2))
+                                     dtype=np.uint16,
+                                     shape=(self.config.ntriggers, self.nsamples),
+                                     offset=((self.nsamples+2) * self.nadcs) * 2 + 4,
+                                     strides=((self.nsamples+2) * 2, 2))
     self._triggertraces.setflags(write=False)
 
   @property
@@ -112,7 +111,7 @@ class Event:
 
   @property
   def eventtime_ns(self):
-    return np.int64(self.buffer.timeoffset[2] *1e9)+ self.runtime_ns
+    return np.int64(self.buffer.timeoffset[2] * 1e9) + self.runtime_ns
 
   @property
   def eventtime_imprecise(self):
@@ -198,11 +197,12 @@ class Event:
   def deadtime_ns(self):
     sample_period = 1 / (self.deadregion_maxticks + 1) * 1e9
     deadtime_ns = (self.deadregion_stop_ticks-self.deadregion_start_ticks) * sample_period
-    return np.int64(self.deadregion_stop_pps-self.deadregion_start_pps) +  np.int64(deadtime_ns)
+    return np.int64(self.deadregion_stop_pps-self.deadregion_start_pps) + np.int64(deadtime_ns)
+
 
 class Config:
   def __init__(self, raw_event_struct):
-    self.buffer  = raw_event_struct
+    self.buffer = raw_event_struct
 
   @property
   def nsamples(self):
@@ -248,6 +248,7 @@ class Config:
   def gps(self):
     return self.buffer.gps
 
+
 class CardStatus:
   def __init__(self, raw_card_status_struct):
     self.buffer = raw_card_status_struct
@@ -259,10 +260,6 @@ class CardStatus:
   @property
   def status(self):
     return self.buffer.status
-
-  @property
-  def eventno(self):
-    return self.buffer.eventno
 
   @property
   def eventno(self):
@@ -301,18 +298,6 @@ class CardStatus:
     return self.buffer.totalerrors
 
   @property
-  def enverrors(self):
-    return self.buffer.enverrors
-
-  @property
-  def ctierrors(self):
-    return self.buffer.ctierrors
-
-  @property
-  def linkerrors(self):
-    return self.buffer.linkerrors
-
-  @property
   def othererrors(self):
     return np.ndarray(shape=(5), dtype=np.uint16, offset=0, buffer=self.buffer.othererrors)
 
@@ -328,11 +313,14 @@ class CardStatus:
   def linkerrors(self):
     return np.ndarray(shape=(self.numlinks), dtype=np.uint16, offset=0, buffer=self.buffer.linkerrors)
 
+  @property
+  def enverrors(self):
+    return np.ndarray(shape=(self.numlinks), dtype=np.uint16, offset=0, buffer=self.buffer.enverrors)
+
 
 class Status:
-
   def __init__(self, raw_event_struct):
-    self.buffer  = raw_event_struct
+    self.buffer = raw_event_struct
 
   @property
   def status(self):
@@ -355,8 +343,9 @@ class Status:
     for i in range(self.cards):
       yield CardStatus(self.buffer.data[i])
 
+
 class FCIO:
-  def __init__(self,filename : str, timeout : int = 0, buffersize : int = 0, debug : int = 0):
+  def __init__(self, filename : str, timeout : int = 0, buffersize : int = 0, debug : int = 0):
 
     self.filename = str(filename)
     self.timeout = int(timeout)

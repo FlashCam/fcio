@@ -17,4 +17,3 @@ extensions = [
 ]
 
 setup(ext_modules=extensions)
-
