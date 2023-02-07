@@ -1,13 +1,11 @@
 CFLAGS       := -std=c99 -O2 -Wall -Wextra -W -pedantic -march=native -fPIC
 INCDIRS      := src
-SUBMAKEFILES := src/Rules.mk src/Rules-shared.mk
+SUBMAKEFILES := src/Rules.mk
 
 .PHONY: submodules
-submodules: 
+submodules:
 	git submodule update --init --recursive
 
-# let's hope this redefinition never breaks. I think it's import to note have any
-# lines for the recipe here, these would be overwritten
 all: submodules
 
 # prefix ?= /usr/local
@@ -15,7 +13,7 @@ all: submodules
 install: all
 ifeq ($(prefix),)
 	@echo 'prefix variable not set. We require an explicity installation path.'
-	@echo 'Rerun with e.g.: make prefix=$${HOME}/.local install'
+	@echo 'Example: make prefix=$${HOME}/.local install'
 	@exit 1
 endif
 
