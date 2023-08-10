@@ -1229,8 +1229,6 @@ FCIOStateReader *FCIOCreateStateReader(
 
 /*--- Description ------------------------------------------------//
 
-experimental.... 
-
 //----------------------------------------------------------------*/
 {
   FCIOStateReader *reader = (FCIOStateReader *) calloc(1, sizeof(FCIOStateReader));
@@ -1286,8 +1284,6 @@ int FCIODestroyStateReader(FCIOStateReader *reader)
 
 /*--- Description ------------------------------------------------//
 
-experimental.... 
-
 //----------------------------------------------------------------*/
 {
   if (!reader)
@@ -1311,8 +1307,6 @@ int FCIOSelectStateTag(FCIOStateReader *reader, int tag)
 
 /*--- Description ------------------------------------------------//
 
-experimental.... 
-
 //----------------------------------------------------------------*/
 {
   if (!tag)
@@ -1331,8 +1325,6 @@ experimental....
 int FCIODeselectStateTag(FCIOStateReader *reader, int tag)
 
 /*--- Description ------------------------------------------------//
-
-experimental.... 
 
 //----------------------------------------------------------------*/
 {
@@ -1503,8 +1495,6 @@ FCIOState *FCIOGetState(FCIOStateReader *reader, int offset, int *timedout)
 
 /*--- Description ------------------------------------------------//
 
-experimental.... 
-
 //----------------------------------------------------------------*/
 {
   if (timedout)
@@ -1590,8 +1580,6 @@ experimental....
 FCIOState *FCIOGetNextState(FCIOStateReader *reader, int *timedout)
 
 /*--- Description ------------------------------------------------//
-
-experimental.... 
 
 //----------------------------------------------------------------*/
 {
