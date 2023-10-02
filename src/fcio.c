@@ -991,7 +991,8 @@ if(name==0)
   return 0;
 }
 
-tmio_stream *x=tmio_init(proto, timeout, buffer,0);
+int tmio_debug = debug-3;
+tmio_stream *x=tmio_init(proto, timeout, buffer, tmio_debug<0?0:tmio_debug);
 if(x==0)
 {
    if(debug) fprintf(stderr,"FCIOConnect: error init TMIO structure\n");
