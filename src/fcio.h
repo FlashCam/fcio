@@ -167,6 +167,18 @@ typedef struct {                  // Reconstructed event
 
 } fcio_recevent;
 
+
+typedef struct {
+
+  unsigned int reqid, status, eventno, pps, ticks, maxticks, numenv,
+                numctilinks, numlinks, dummy;
+  unsigned int totalerrors, enverrors, ctierrors, linkerrors, othererrors[5];
+  int          environment[16];
+  unsigned int ctilinks[4];
+  unsigned int linkstates[256];
+
+} card_status;
+
 typedef struct {        // Readout status (~1 Hz, programmable)
 
   int status;           // 0: Errors occured, 1: no errors
@@ -192,16 +204,7 @@ typedef struct {        // Readout status (~1 Hz, programmable)
   // these values should be used as informational content and can be
   // changed in future versions
 
-  struct {
-
-    unsigned int reqid, status, eventno, pps, ticks, maxticks, numenv,
-                  numctilinks, numlinks, dummy;
-    unsigned int totalerrors, enverrors, ctierrors, linkerrors, othererrors[5];
-    int          environment[16];
-    unsigned int ctilinks[4];
-    unsigned int linkstates[256];
-
-  } data[256];
+  card_status data[256];
 
 } fcio_status;
 
