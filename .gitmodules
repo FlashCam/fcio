@@ -1,3 +1,0 @@
-[submodule "externals/tmio"]
-	path = externals/tmio
-	url = https://www.mpi-hd.mpg.de/software/fwerner/tmio.git
