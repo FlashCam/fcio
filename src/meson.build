@@ -1,5 +1,5 @@
 install_headers('fcio.h')
-fcio_sources = ['fcio.c', 'time_utils.c']
+fcio_sources =files('fcio.c', 'time_utils.c')
 
 fcio_lib = library('fcio',
   fcio_sources,
