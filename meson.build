@@ -16,7 +16,7 @@ fcio_inc = include_directories('src')
 
 subdir('src')
 
-fcio_dep = declare_dependency(include_directories : fcio_inc, link_with : fcio_lib)
+fcio_dep = declare_dependency(include_directories : fcio_inc, link_with : fcio_lib, sources : fcio_sources)
 
 pkg_mod = import('pkgconfig')
 pkg_mod.generate(fcio_lib,
