@@ -1,8 +1,0 @@
-./dist
-./env
-./build
-
-*.egg-info
-__pycache__
-*.so
-src/fcio/src
