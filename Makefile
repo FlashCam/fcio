@@ -1,11 +1,14 @@
 BUILDDIR:=build
 
-.PHONY: setup compile install uninstall
+.PHONY: setup compile install uninstall clean
 
 all: compile
 
 $(BUILDDIR):
 	meson setup $(BUILDDIR)
+
+clean:
+	@rm -r $(BUILDDIR)
 
 compile: $(BUILDDIR)
 	meson compile -C $(BUILDDIR)

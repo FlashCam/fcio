@@ -1,22 +1,15 @@
 # Installation
 
-Run `make` to produce the C header file `include/fcio.h` and the static library `lib/fcio.a`, and it's dependencies `lib/bufio.a` and `lib/tmio.a`.
+Building requires `meson` and `ninja`.
 
-Run `make prefix=<path-to-install> install` to install header (`$prefix/include`) and libraries (`$prefix/lib/`). `prefix` does not have a default and _needs_ to be set explicitely.
+If these are not available (or already shipped) via your OS package manager,
+it is possible to install them using `python3 -m pip install --user meson ninja`.
 
+The `Makefile` is acting as a thin wrapper around the usual meson commands:
 
-# Contributing
-
-This project is licensed under the Mozilla Public License 2.0, see [LICENSE](LICENSE) for the full terms of use. The MPL
-2.0 is a free-software license and we encourage you to feed back any improvements by submitting patches to the upstream
-maintainers (see Contact below).
-
-The `Makefile` provided to build this project is licensed under the GNU General Public License 3.0.
-
-# Development
-
-The `tmio` and `bufio` dependencies are pulled into the repository as git submodules.
-
-# Contact
-
-Please send your questions, bug reports or patches via e-mail to fcio-maintainers@mpi-hd.mpg.de.
+- `make build`: creates the local build directory, default `build`
+- `make clean`: removes the build directory
+- `make`,`make compile`: depends on `build` and compiles the library
+- `make local`: reconfigures the build directory to install the library `pkg-config` definitions into `${HOME}/.local`
+- `make install`: installs the library
+- `make uninstall`: uninstalls the installed files defined in the `build` directory
