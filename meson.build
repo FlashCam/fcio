@@ -11,14 +11,15 @@ project('fcio', 'c',
    ]
 )
 
-bufio_dep = dependency('bufio', fallback : ['bufio', 'bufio_dep'])
 tmio_dep = dependency('tmio', fallback : ['tmio', 'tmio_dep'])
 
 fcio_inc= include_directories('src')
 
 subdir('src')
 
-fcio_dep = declare_dependency(include_directories : fcio_inc, link_with : fcio_lib, sources : fcio_sources)
+fcio_dep = declare_dependency(include_directories : fcio_inc, link_with : fcio_lib, sources : fcio_sources, dependencies : [tmio_dep])
+
+subdir('examples')
 
 pkg_mod = import('pkgconfig')
 pkg_mod.generate(fcio_lib)

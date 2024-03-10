@@ -1,7 +1,2 @@
-[wrap-git]
-url=git@github.com:fwerner/bufio.git
-revision=main
-depth=1
-
-[provide]
-dependency_names = bufio
+[wrap-redirect]
+filename = tmio/subprojects/bufio.wrap
