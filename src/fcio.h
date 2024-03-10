@@ -253,6 +253,10 @@ int FCIOPutRecEvent(FCIOStream output, FCIOData *input)
 ;
 int FCIOPutRecord(FCIOStream output, FCIOData* input, int tag)
 ;
+int FCIOGetRecordStreamSize(FCIOStream output, char direction)
+;
+int FCIOFileno(FCIOStream output)
+;
 int FCIOGetRecord(FCIOData* x)
 ;
 FCIOStream FCIOConnect(const char *name, int direction, int timeout, int buffer)
