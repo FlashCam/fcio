@@ -4,6 +4,6 @@ fcio_sources =files('fcio.c', 'time_utils.c')
 fcio_lib = library('fcio',
   fcio_sources,
   include_directories : fcio_inc,
-  dependencies : [ bufio_dep, tmio_dep ],
+  dependencies : [ tmio_dep ],
   install : true
 )
