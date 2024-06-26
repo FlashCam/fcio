@@ -21,3 +21,6 @@ install: compile
 
 uninstall:
 	cd $(BUILDDIR) && meson --internal uninstall
+
+test:
+	meson test -C $(BUILDDIR) --suite fcio
