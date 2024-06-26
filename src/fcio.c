@@ -1312,7 +1312,7 @@ int FCIOSelectStateTag(FCIOStateReader *reader, int tag)
 {
   if (!tag)
     reader->selected_tags = 0xffffffff;
-  else if (tag >= FCIOConfig && tag <= FCIOSparseEvent)
+  else if (tag > 0 && tag <= 31)
     reader->selected_tags |= (1 << tag);
   else
     return -1;
@@ -1331,7 +1331,7 @@ int FCIODeselectStateTag(FCIOStateReader *reader, int tag)
 {
   if (!tag)
     reader->selected_tags = 0;
-  else if (tag > 0 && tag <= FCIOSparseEvent)
+  else if (tag > 0 && tag <= 31)
     reader->selected_tags &= ~(1 << tag);
   else
     return -1;
@@ -1342,7 +1342,7 @@ int FCIODeselectStateTag(FCIOStateReader *reader, int tag)
 
 static int tag_selected(FCIOStateReader *reader, int tag)
 {
-  if (tag <= 0 || tag > FCIOSparseEvent)
+  if (tag <= 0 || tag > 31)
     return 0;
 
   return reader->selected_tags & (1 << tag);
@@ -1392,6 +1392,9 @@ static int get_next_record(FCIOStateReader *reader, int timeout)
   int tag = FCIOReadMessage(stream);
   if (debug > 4)
     fprintf(stderr, "get_next_record: got tag %d \n", tag);
+
+  if (tag <= 0)
+    return 0;
 
   fcio_config *config = reader->nconfigs ? &reader->configs[(reader->cur_config + reader->max_states - 1) % reader->max_states] : NULL;
   fcio_event *event = reader->nevents ? &reader->events[(reader->cur_event + reader->max_states - 1) % reader->max_states] : NULL;
@@ -1457,12 +1460,6 @@ static int get_next_record(FCIOStateReader *reader, int timeout)
     reader->cur_status = (reader->cur_status + 1) % reader->max_states;
     reader->nstatuses++;
     break;
-
-  case 0:
-    return 0;
-
-  default:
-    return -1;
   }
 
   // Fill current state buffer
