@@ -226,7 +226,10 @@ typedef enum {
   FCIOEvent = 3,
   FCIOStatus = 4,
   FCIORecEvent = 5,
-  FCIOSparseEvent = 6
+  FCIOSparseEvent = 6,
+  FCIOFSPConfig = 7,
+  FCIOFSPEvent = 8,
+  FCIOFSPStatus = 9
 } FCIOTag;
 
 typedef void* FCIOStream;
