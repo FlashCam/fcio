@@ -1394,7 +1394,7 @@ static int get_next_record(FCIOStateReader *reader, int timeout)
     fprintf(stderr, "get_next_record: got tag %d \n", tag);
 
   if (tag <= 0)
-    return 0;
+    return tag;
 
   fcio_config *config = reader->nconfigs ? &reader->configs[(reader->cur_config + reader->max_states - 1) % reader->max_states] : NULL;
   fcio_event *event = reader->nevents ? &reader->events[(reader->cur_event + reader->max_states - 1) % reader->max_states] : NULL;
@@ -1473,7 +1473,6 @@ static int get_next_record(FCIOStateReader *reader, int timeout)
   // Advance state buffer
   if (tag_selected(reader, tag)) {
     reader->cur_state = (reader->cur_state + 1) % reader->max_states;
-    reader->states[reader->cur_state].last_tag = 0;
     reader->nrecords++;
   }
 
