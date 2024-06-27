@@ -267,6 +267,8 @@ int FCIORead(FCIOStream x, int size, void *data)
 ;
 int FCIOWaitMessage(FCIOStream x, int tmo)
 ;
+FCIOStream FCIOStreamHandle(FCIOData *x)
+;
 
 typedef struct {
   fcio_config *config;

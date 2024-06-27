@@ -432,6 +432,23 @@ returns 1 on success or 0 on error
   return 1;
 }
 
+
+/*=== Function ===================================================*/
+
+FCIOStream FCIOStreamHandle(FCIOData *x)
+
+/*--- Description ------------------------------------------------//
+
+Returns the internal FCIOStream object on success or NULL on error.
+
+//----------------------------------------------------------------*/
+{
+  FCIOStream xio=x->ptmio;
+  if(xio==NULL) return NULL;
+  if(debug>2) fprintf(stderr,"FCIOStream/DEBUG: return stream pointer.\n");
+  return xio;
+}
+
 /*=== Function ===================================================*/
 
 int FCIOPutConfig(FCIOStream output, FCIOData *input)
