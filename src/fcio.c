@@ -335,9 +335,10 @@ typedef enum {
   FCIOStatus = 4,
   FCIORecEvent = 5,
   FCIOSparseEvent = 6,
-  FCIOFSPConfig = 7,
-  FCIOFSPEvent = 8,
-  FCIOFSPStatus = 9
+  FCIOEventHeader = 7,
+  FCIOFSPConfig = 8,
+  FCIOFSPEvent = 9,
+  FCIOFSPStatus = 10
 } FCIOTag;
 
 //----------------------------------------------------------------*/
@@ -452,6 +453,25 @@ Returns the internal FCIOStream object on success or NULL on error.
   return xio;
 }
 
+
+static inline int fcio_put_config(FCIOStream output, fcio_config* config)
+{
+  FCIOWriteMessage(output,FCIOConfig);
+  FCIOWriteInt(output,config->adcs);
+  FCIOWriteInt(output,config->triggers);
+  FCIOWriteInt(output,config->eventsamples);
+  FCIOWriteInt(output,config->blprecision);
+  FCIOWriteInt(output,config->sumlength);
+  FCIOWriteInt(output,config->adcbits);
+  FCIOWriteInt(output,config->mastercards);
+  FCIOWriteInt(output,config->triggercards);
+  FCIOWriteInt(output,config->adccards);
+  FCIOWriteInt(output,config->gps);
+  FCIOWriteInts(output,(config->adcs+config->triggers),config->tracemap);
+
+  return FCIOFlush(output);
+}
+
 /*=== Function ===================================================*/
 
 int FCIOPutConfig(FCIOStream output, FCIOData *input)
@@ -470,18 +490,20 @@ Returns 1 on success or 0 on error.
     return 0;
   }
 
-  FCIOWriteMessage(output,FCIOConfig);
-  FCIOWriteInt(output,input->config.adcs);
-  FCIOWriteInt(output,input->config.triggers);
-  FCIOWriteInt(output,input->config.eventsamples);
-  FCIOWriteInt(output,input->config.blprecision);
-  FCIOWriteInt(output,input->config.sumlength);
-  FCIOWriteInt(output,input->config.adcbits);
-  FCIOWriteInt(output,input->config.mastercards);
-  FCIOWriteInt(output,input->config.triggercards);
-  FCIOWriteInt(output,input->config.adccards);
-  FCIOWriteInt(output,input->config.gps);
-  FCIOWriteInts(output,(input->config.adcs+input->config.triggers),input->config.tracemap);
+  return fcio_put_config(output, &input->config);
+}
+
+
+static inline int fcio_put_status(FCIOStream output, fcio_status* status)
+{
+  FCIOWriteMessage(output, FCIOStatus);
+  FCIOWriteInt(output, status->status);
+  FCIOWriteInts(output, 10, status->statustime);
+  FCIOWriteInt(output, status->cards);
+  FCIOWriteInt(output, status->size);
+  int i; for (i = 0; i < status->cards; i++)
+    FCIOWrite(output, status->size, (void*)&status->data[i]);
+
   return FCIOFlush(output);
 }
 
@@ -506,17 +528,22 @@ Returns 1 on success or 0 on error.
     return 0;
   }
 
-  FCIOWriteMessage(output, FCIOStatus);
-  FCIOWriteInt(output, input->status.status);
-  FCIOWriteInts(output, 10, input->status.statustime);
-  FCIOWriteInt(output, input->status.cards);
-  FCIOWriteInt(output, input->status.size);
-  int i; for (i = 0; i < input->status.cards; i++)
-    FCIOWrite(output, input->status.size, (void*)&input->status.data[i]);
+  return fcio_put_status(output, &input->status);
+}
+
+
+static inline int fcio_put_event(FCIOStream output, fcio_config* config, fcio_event* event)
+{
+  FCIOWriteMessage(output,FCIOEvent);
+  FCIOWriteInt(output,event->type);
+  FCIOWriteFloat(output,event->pulser);
+  FCIOWriteInts(output, event->timeoffset_size, event->timeoffset);
+  FCIOWriteInts(output, event->timestamp_size, event->timestamp);
+  FCIOWriteUShorts(output,(config->adcs+config->triggers)*(config->eventsamples+2),event->traces);
+  FCIOWriteInts(output, event->deadregion_size, event->deadregion);
 
   return FCIOFlush(output);
 }
-
 
 /*=== Function ===================================================*/
 
@@ -542,13 +569,27 @@ Returns 1 on success or 0 on error.
     return 0;
   }
 
-  FCIOWriteMessage(output,FCIOEvent);
-  FCIOWriteInt(output,input->event.type);
-  FCIOWriteFloat(output,input->event.pulser);
-  FCIOWriteInts(output, input->event.timeoffset_size, input->event.timeoffset);
-  FCIOWriteInts(output, input->event.timestamp_size, input->event.timestamp);
-  FCIOWriteUShorts(output,(input->config.adcs+input->config.triggers)*(input->config.eventsamples+2),input->event.traces);
-  FCIOWriteInts(output, input->event.deadregion_size, input->event.deadregion);
+  return fcio_put_event(output, &input->config, &input->event);
+}
+
+
+static inline int fcio_put_sparseevent(FCIOStream output, fcio_config* config, fcio_event* event)
+{
+  FCIOWriteMessage(output,FCIOSparseEvent);
+  FCIOWriteInt(output,event->type);
+  FCIOWriteFloat(output,event->pulser);
+  FCIOWriteInts(output, event->timeoffset_size, event->timeoffset);
+  FCIOWriteInts(output, event->timestamp_size, event->timestamp);
+  FCIOWriteInts(output, event->deadregion_size, event->deadregion);
+  FCIOWriteInts(output,1,&event->num_traces);
+  FCIOWriteUShorts(output,event->num_traces,event->trace_list);
+
+  int length = config->eventsamples+2;
+  int i; for (i = 0; i < event->num_traces; i++)
+  {
+    int j = event->trace_list[i];
+    FCIOWriteUShorts(output,length,&event->traces[j * length]);
+  }
 
   return FCIOFlush(output);
 }
@@ -570,8 +611,6 @@ Only those traces, whose index is stored in trace_list will be serialized.
 
 Returns 1 on success or 0 on error.
 
-
-
 //----------------------------------------------------------------*/
 {
   if (!output){
@@ -579,21 +618,23 @@ Returns 1 on success or 0 on error.
     return 0;
   }
 
-  FCIOWriteMessage(output,FCIOSparseEvent);
-  FCIOWriteInt(output,input->event.type);
-  FCIOWriteFloat(output,input->event.pulser);
-  FCIOWriteInts(output, input->event.timeoffset_size, input->event.timeoffset);
-  FCIOWriteInts(output, input->event.timestamp_size, input->event.timestamp);
-  FCIOWriteInts(output, input->event.deadregion_size, input->event.deadregion);
-  FCIOWriteInts(output,1,&input->event.num_traces);
-  FCIOWriteUShorts(output,input->event.num_traces,input->event.trace_list);
+  return fcio_put_sparseevent(output, &input->config, &input->event);
+}
 
-  int length = input->config.eventsamples+2;
-  int i; for (i = 0; i < input->event.num_traces; i++)  
-  {
-    int j = input->event.trace_list[i];
-    FCIOWriteUShorts(output,length,&input->event.traces[j * length]);
-  }
+
+static inline int fcio_put_recevent(FCIOStream output, fcio_config* config, fcio_recevent* recevent)
+{
+  FCIOWriteMessage(output,FCIORecEvent);
+  FCIOWriteInt(output, recevent->type);
+  FCIOWriteFloat(output, recevent->pulser);
+  FCIOWriteInts(output, recevent->timeoffset_size, recevent->timeoffset);
+  FCIOWriteInts(output, recevent->timestamp_size, recevent->timestamp);
+  FCIOWriteInts(output, recevent->deadregion_size, recevent->deadregion);
+  FCIOWriteInt(output, recevent->totalpulses);
+  FCIOWriteInts(output, config->adcs, recevent->channel_pulses);
+  FCIOWriteInts(output, recevent->totalpulses, recevent->flags);
+  FCIOWriteFloats(output, recevent->totalpulses, recevent->amplitudes);
+  FCIOWriteFloats(output, recevent->totalpulses, recevent->times);
 
   return FCIOFlush(output);
 }
@@ -623,19 +664,7 @@ Returns 1 on success or 0 on error.
     fprintf(stderr, "FCIOPutRecEvent/ERROR: Output not connected.\n");
     return 0;
   }
-  FCIOWriteMessage(output,FCIORecEvent);
-  FCIOWriteInt(output, input->recevent.type);
-  FCIOWriteFloat(output, input->recevent.pulser);
-  FCIOWriteInts(output, input->recevent.timeoffset_size, input->recevent.timeoffset);
-  FCIOWriteInts(output, input->recevent.timestamp_size, input->recevent.timestamp);
-  FCIOWriteInts(output, input->recevent.deadregion_size, input->recevent.deadregion);
-  FCIOWriteInt(output, input->recevent.totalpulses);
-  FCIOWriteInts(output, input->config.adcs, input->recevent.channel_pulses);
-  FCIOWriteInts(output, input->recevent.totalpulses, input->recevent.flags);
-  FCIOWriteFloats(output, input->recevent.totalpulses, input->recevent.amplitudes);
-  FCIOWriteFloats(output, input->recevent.totalpulses, input->recevent.times);
-
-  return FCIOFlush(output);
+  return fcio_put_recevent(output, &input->config, &input->recevent);
 }
 
 
@@ -660,19 +689,19 @@ Returns the return value of the individual FICOPut functions or 0 on unknown tag
 {
   switch (tag) {
     case FCIOEvent:
-      return FCIOPutEvent(output, input);
+      return fcio_put_event(output, &input->config, &input->event);
 
     case FCIOSparseEvent:
-      return FCIOPutSparseEvent(output, input);
+      return fcio_put_sparseevent(output, &input->config, &input->event);
 
     case FCIORecEvent:
-      return FCIOPutRecEvent(output, input);
+      return fcio_put_recevent(output, &input->config, &input->recevent);
 
     case FCIOConfig:
-      return FCIOPutConfig(output, input);
+      return fcio_put_config(output, &input->config);
 
     case FCIOStatus:
-      return FCIOPutStatus(output, input);
+      return fcio_put_status(output, &input->status);
   }
   return 0;
 }
@@ -1601,6 +1630,34 @@ FCIOState *FCIOGetNextState(FCIOStateReader *reader, int *timedout)
 //----------------------------------------------------------------*/
 {
   return FCIOGetState(reader, 1, timedout);
+}
+
+/*=== Function ===================================================*/
+
+int FCIOPutState(FCIOStream output, FCIOState* state)
+
+/*--- Description ------------------------------------------------//
+
+//----------------------------------------------------------------*/
+{
+  switch (state->last_tag) {
+    case FCIOEvent:
+      return fcio_put_event(output, state->config, state->event);
+
+    case FCIOSparseEvent:
+      return fcio_put_sparseevent(output, state->config, state->event);
+
+    case FCIORecEvent:
+      return fcio_put_recevent(output, state->config, state->recevent);
+
+    case FCIOConfig:
+      return fcio_put_config(output, state->config);
+
+    case FCIOStatus:
+      return fcio_put_status(output, state->status);
+  }
+  return 0;
+
 }
 
 
