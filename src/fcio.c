@@ -573,6 +573,7 @@ Returns 1 on success or 0 on error.
 }
 
 
+
 static inline int fcio_put_sparseevent(FCIOStream output, fcio_config* config, fcio_event* event)
 {
   FCIOWriteMessage(output,FCIOSparseEvent);
@@ -621,6 +622,56 @@ Returns 1 on success or 0 on error.
   return fcio_put_sparseevent(output, &input->config, &input->event);
 }
 
+
+static inline int fcio_put_eventheader(FCIOStream output, fcio_event* event)
+{
+  FCIOWriteMessage(output,FCIOEventHeader);
+  FCIOWriteInt(output,event->type);
+  FCIOWriteFloat(output,event->pulser);
+  FCIOWriteInts(output, event->timeoffset_size, event->timeoffset);
+  FCIOWriteInts(output, event->timestamp_size, event->timestamp);
+  FCIOWriteInts(output, event->deadregion_size, event->deadregion);
+  FCIOWriteInts(output,1,&event->num_traces);
+  FCIOWriteUShorts(output,event->num_traces,event->trace_list);
+
+  const int length = 2;
+  unsigned short write_buffer[FCIOMaxChannels * length];
+  int i; for (i = 0; i < event->num_traces; i++)
+  {
+    int j = event->trace_list[i];
+    int k; for (k = 0; k < length; k++)
+      write_buffer[i + k] = event->traces[j * length + k];
+  }
+  FCIOWriteUShorts(output, event->num_traces * length, write_buffer);
+
+  return FCIOFlush(output);
+}
+
+/*=== Function ===================================================*/
+
+int FCIOPutEventHeader(FCIOStream output, FCIOData *input)
+
+/*--- Description ------------------------------------------------//
+
+Writes the metadata and header of event data (struct fcio_event) to remote peer or file.
+
+The number of items in event.timeoffset, timestamp and deadregion sent
+to remote depends on their corresponding *_size items.
+
+The number of theader sent depends on the trace_list array (with actual size num_traces).
+Only those traces, whose index is stored in trace_list will be serialized.
+
+Returns 1 on success or 0 on error.
+
+//----------------------------------------------------------------*/
+{
+  if (!output){
+    fprintf(stderr, "FCIOPutEventHeader/ERROR: Output not connected.\n");
+    return 0;
+  }
+
+  return fcio_put_eventheader(output, &input->event);
+}
 
 static inline int fcio_put_recevent(FCIOStream output, fcio_config* config, fcio_recevent* recevent)
 {
@@ -702,6 +753,9 @@ Returns the return value of the individual FICOPut functions or 0 on unknown tag
 
     case FCIOStatus:
       return fcio_put_status(output, &input->status);
+
+    case FCIOEventHeader:
+      return fcio_put_eventheader(output, &input->event);
   }
   return 0;
 }
@@ -815,6 +869,38 @@ static inline void fcio_get_sparseevent(FCIOStream stream, fcio_event *event, in
   }
 }
 
+static inline void fcio_get_eventheader(FCIOStream stream, fcio_event *event)
+{
+  FCIOReadInt(stream,event->type);
+  FCIOReadFloat(stream,event->pulser);
+  event->timeoffset_size = FCIOReadInts(stream,10,event->timeoffset)/sizeof(int);
+  event->timestamp_size = FCIOReadInts(stream,10,event->timestamp)/sizeof(int);
+  event->deadregion_size = FCIOReadInts(stream,10,event->deadregion)/sizeof(int);
+  FCIOReadInts(stream,1,&event->num_traces);
+  FCIOReadUShorts(stream,event->num_traces,event->trace_list);
+
+  const int length = 2;
+  unsigned short read_buffer[FCIOMaxChannels * length];
+  FCIOReadUShorts(stream, event->num_traces * length, read_buffer);
+  int i; for(i = 0; i < event->num_traces; i++) {
+    int j = event->trace_list[i];
+    int k; for (k = 0; k < length; k++)
+      event->traces[j * length + k] = read_buffer[i + k];
+  }
+
+  if (debug > 3)
+  {
+    int i;
+    fprintf(stderr,"FCIO/fcio_get_event_header: type %d pulser %g, offset %d %d %d ",event->type,event->pulser,event->timeoffset[0],event->timeoffset[1],event->timeoffset[2]);
+    fprintf(stderr,"timestamp "); for (i = 0; i < 10; i++) fprintf(stderr,"%d ",event->timestamp[i]);
+    fprintf(stderr,"dead "); for (i = 0; i < 10; i++) fprintf(stderr,"%d ",event->deadregion[i]);
+    //fprintf(stderr," traces ");
+    //for (i = 0; i < event->num_traces; i++) fprintf(stderr," %d",event->trace_list[i]);
+    fprintf(stderr,"\n");
+
+  }
+}
+
 static inline void fcio_get_recevent(FCIOStream stream, fcio_recevent *recevent)
 {
   FCIOReadInt(stream,recevent->type);
@@ -897,6 +983,11 @@ further items.
 
     case FCIOStatus: {
       fcio_get_status(xio, &x->status);
+    }
+    break;
+
+    case FCIOEventHeader: {
+      fcio_get_eventheader(xio, &x->event);
     }
     break;
   }
@@ -1655,6 +1746,9 @@ int FCIOPutState(FCIOStream output, FCIOState* state)
 
     case FCIOStatus:
       return fcio_put_status(output, state->status);
+
+    case FCIOEventHeader:
+      return fcio_put_eventheader(output, state->event);
   }
   return 0;
 

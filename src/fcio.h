@@ -247,6 +247,8 @@ int FCIOPutEvent(FCIOStream output, FCIOData *input)
 ;
 int FCIOPutSparseEvent(FCIOStream output, FCIOData *input)
 ;
+int FCIOPutEventHeader(FCIOStream output, FCIOData *input)
+;
 int FCIOPutRecEvent(FCIOStream output, FCIOData *input)
 ;
 int FCIOPutRecord(FCIOStream output, FCIOData* input, int tag)
