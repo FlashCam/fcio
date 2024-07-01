@@ -623,7 +623,7 @@ Returns 1 on success or 0 on error.
 }
 
 
-static inline int fcio_put_eventheader(FCIOStream output, fcio_event* event)
+static inline int fcio_put_eventheader(FCIOStream output, fcio_config* config, fcio_event* event)
 {
   FCIOWriteMessage(output,FCIOEventHeader);
   FCIOWriteInt(output,event->type);
@@ -634,15 +634,15 @@ static inline int fcio_put_eventheader(FCIOStream output, fcio_event* event)
   FCIOWriteInts(output,1,&event->num_traces);
   FCIOWriteUShorts(output,event->num_traces,event->trace_list);
 
-  const int length = 2;
-  unsigned short write_buffer[FCIOMaxChannels * length];
+  const int length = config->eventsamples + 2;
+  unsigned short write_buffer[FCIOMaxChannels * 2];
   int i; for (i = 0; i < event->num_traces; i++)
   {
     int j = event->trace_list[i];
-    int k; for (k = 0; k < length; k++)
-      write_buffer[i + k] = event->traces[j * length + k];
+    int k; for (k = 0; k < 2; k++)
+      write_buffer[i * 2 + k] = event->traces[j * length + k];
   }
-  FCIOWriteUShorts(output, event->num_traces * length, write_buffer);
+  FCIOWriteUShorts(output, event->num_traces * 2, write_buffer);
 
   return FCIOFlush(output);
 }
@@ -670,7 +670,7 @@ Returns 1 on success or 0 on error.
     return 0;
   }
 
-  return fcio_put_eventheader(output, &input->event);
+  return fcio_put_eventheader(output, &input->config, &input->event);
 }
 
 static inline int fcio_put_recevent(FCIOStream output, fcio_config* config, fcio_recevent* recevent)
@@ -755,7 +755,7 @@ Returns the return value of the individual FICOPut functions or 0 on unknown tag
       return fcio_put_status(output, &input->status);
 
     case FCIOEventHeader:
-      return fcio_put_eventheader(output, &input->event);
+      return fcio_put_eventheader(output, &input->config, &input->event);
   }
   return 0;
 }
@@ -869,7 +869,7 @@ static inline void fcio_get_sparseevent(FCIOStream stream, fcio_event *event, in
   }
 }
 
-static inline void fcio_get_eventheader(FCIOStream stream, fcio_event *event)
+static inline void fcio_get_eventheader(FCIOStream stream, fcio_config* config, fcio_event *event)
 {
   FCIOReadInt(stream,event->type);
   FCIOReadFloat(stream,event->pulser);
@@ -879,13 +879,13 @@ static inline void fcio_get_eventheader(FCIOStream stream, fcio_event *event)
   FCIOReadInts(stream,1,&event->num_traces);
   FCIOReadUShorts(stream,FCIOMaxChannels,event->trace_list);
 
-  const int length = 2;
-  unsigned short read_buffer[FCIOMaxChannels * length];
-  FCIOReadUShorts(stream, event->num_traces * length, read_buffer);
+  const int length = config->eventsamples + 2;
+  unsigned short read_buffer[FCIOMaxChannels * 2];
+  FCIOReadUShorts(stream, event->num_traces * 2, read_buffer);
   int i; for(i = 0; i < event->num_traces; i++) {
     int j = event->trace_list[i];
-    int k; for (k = 0; k < length; k++)
-      event->traces[j * length + k] = read_buffer[i + k];
+    int k; for (k = 0; k < 2; k++)
+      event->traces[j * length + k] = read_buffer[i * 2 + k];
   }
 
   if (debug > 3)
@@ -987,7 +987,7 @@ further items.
     break;
 
     case FCIOEventHeader: {
-      fcio_get_eventheader(xio, &x->event);
+      fcio_get_eventheader(xio, &x->config, &x->event);
     }
     break;
   }
@@ -1600,7 +1600,27 @@ static int get_next_record(FCIOStateReader *reader, int timeout)
     reader->cur_status = (reader->cur_status + 1) % reader->max_states;
     reader->nstatuses++;
     break;
+
+  case FCIOEventHeader:
+    event = &reader->events[reader->cur_event];
+    if (config) {
+      fcio_get_eventheader(stream, config, event);
+
+      for (int i = 0; i < event->num_traces; i++) {
+        int j = event->trace_list[i];
+        event->trace[j] = &event->traces[2 + j * (config->eventsamples + 2)];
+        event->theader[j] = &event->traces[j * (config->eventsamples + 2)];
+      }
+    } else {
+      fprintf(stderr, "[WARNING] Received sparse event without known configuration. Unable to adjust trace pointers.\n");
+    }
+
+    reader->cur_event = (reader->cur_event + 1) % reader->max_states;
+    reader->nevents++;
+    break;
   }
+
+  
 
   // Fill current state buffer
   FCIOState *state = &reader->states[reader->cur_state];
@@ -1748,7 +1768,7 @@ int FCIOPutState(FCIOStream output, FCIOState* state)
       return fcio_put_status(output, state->status);
 
     case FCIOEventHeader:
-      return fcio_put_eventheader(output, state->event);
+      return fcio_put_eventheader(output, state->config, state->event);
   }
   return 0;
 
