@@ -877,7 +877,7 @@ static inline void fcio_get_eventheader(FCIOStream stream, fcio_event *event)
   event->timestamp_size = FCIOReadInts(stream,10,event->timestamp)/sizeof(int);
   event->deadregion_size = FCIOReadInts(stream,10,event->deadregion)/sizeof(int);
   FCIOReadInts(stream,1,&event->num_traces);
-  FCIOReadUShorts(stream,event->num_traces,event->trace_list);
+  FCIOReadUShorts(stream,FCIOMaxChannels,event->trace_list);
 
   const int length = 2;
   unsigned short read_buffer[FCIOMaxChannels * length];
@@ -894,8 +894,8 @@ static inline void fcio_get_eventheader(FCIOStream stream, fcio_event *event)
     fprintf(stderr,"FCIO/fcio_get_event_header: type %d pulser %g, offset %d %d %d ",event->type,event->pulser,event->timeoffset[0],event->timeoffset[1],event->timeoffset[2]);
     fprintf(stderr,"timestamp "); for (i = 0; i < 10; i++) fprintf(stderr,"%d ",event->timestamp[i]);
     fprintf(stderr,"dead "); for (i = 0; i < 10; i++) fprintf(stderr,"%d ",event->deadregion[i]);
-    //fprintf(stderr," traces ");
-    //for (i = 0; i < event->num_traces; i++) fprintf(stderr," %d",event->trace_list[i]);
+    fprintf(stderr," traces ");
+    for (i = 0; i < event->num_traces; i++) fprintf(stderr," %d %u",event->trace_list[i], event->theader[event->trace_list[i]][1]);
     fprintf(stderr,"\n");
 
   }
