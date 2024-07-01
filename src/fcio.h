@@ -226,7 +226,11 @@ typedef enum {
   FCIOEvent = 3,
   FCIOStatus = 4,
   FCIORecEvent = 5,
-  FCIOSparseEvent = 6
+  FCIOSparseEvent = 6,
+  FCIOEventHeader = 7,
+  FCIOFSPConfig = 8,
+  FCIOFSPEvent = 9,
+  FCIOFSPStatus = 10
 } FCIOTag;
 
 typedef void* FCIOStream;
@@ -242,6 +246,8 @@ int FCIOPutStatus(FCIOStream output, FCIOData *input)
 int FCIOPutEvent(FCIOStream output, FCIOData *input)
 ;
 int FCIOPutSparseEvent(FCIOStream output, FCIOData *input)
+;
+int FCIOPutEventHeader(FCIOStream output, FCIOData *input)
 ;
 int FCIOPutRecEvent(FCIOStream output, FCIOData *input)
 ;
@@ -317,6 +323,8 @@ int FCIODeselectStateTag(FCIOStateReader *reader, int tag)
 FCIOState *FCIOGetState(FCIOStateReader *reader, int offset, int *timedout)
 ;
 FCIOState *FCIOGetNextState(FCIOStateReader *reader, int *timedout)
+;
+int FCIOPutState(FCIOStream output, FCIOState* state)
 ;
 #ifdef __cplusplus
 }
