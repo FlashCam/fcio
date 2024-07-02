@@ -1,5 +1,5 @@
 [wrap-git]
-url=git@github.com:fwerner/tmio.git
+url=https://github.com/fwerner/tmio.git
 revision=main
 depth=1
 
