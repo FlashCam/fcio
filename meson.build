@@ -21,7 +21,7 @@ fcio_dep = declare_dependency(include_directories : fcio_inc, link_with : fcio_l
 
 subdir('tests')
 
-# subdir('examples')
+subdir('examples')
 
 pkg_mod = import('pkgconfig')
 pkg_mod.generate(fcio_lib)
