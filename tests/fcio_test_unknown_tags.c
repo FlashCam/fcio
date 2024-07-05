@@ -14,6 +14,8 @@
 
 int main(int argc, char* argv[])
 {
+  assert(argc >= 2);
+
   FCIODebug(FCIODEBUG);
 
   /* write test file*/
