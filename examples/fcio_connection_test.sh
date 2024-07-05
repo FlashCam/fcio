@@ -3,14 +3,14 @@
 writer ()
 {
   set -x
-  bin/fcio_example_writer -v --debug ${WRITER_DEBUG} --timeout ${WRITER_TIMEOUT} --max ${WRITER_MAX} --sleep ${WRITER_SLEEP} ${WRITER_ENDPOINT}
+  build/examples/fcio-example-writer -v --debug ${WRITER_DEBUG} --timeout ${WRITER_TIMEOUT} --max ${WRITER_MAX} --sleep ${WRITER_SLEEP} ${WRITER_ENDPOINT}
   # set +x
 }
 
 reader()
 {
   set -x
-  bin/fcio_example_reader -v --debug ${READER_DEBUG} --timeout ${READER_TIMEOUT} --max ${READER_MAX} --stop-tag ${READER_STOPTAG} ${READER_ENDPOINT}
+  build/examples/fcio-example-reader -v --debug ${READER_DEBUG} --timeout ${READER_TIMEOUT} --max ${READER_MAX} --stop-tag ${READER_STOPTAG} ${READER_ENDPOINT}
   # set +x
 }
 
