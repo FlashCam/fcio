@@ -107,10 +107,8 @@ and may be set before initialization of a context structure.
 
 ///// Header ///////////////////////////////////////////////////////
 
-// #define FCIOWriteInt(x,i)       { int data=(int)(i); FCIOWrite(x,sizeof(int),&data); }
-// #define FCIOWriteFloat(x,f)     { float data=(int)(f); FCIOWrite(x,sizeof(float),&data); }
-#define FCIOWriteInt(x,i)       FCIOWrite(x,sizeof(int),&i);
-#define FCIOWriteFloat(x,f)     FCIOWrite(x,sizeof(float),&f);
+#define FCIOWriteInt(x,i)       FCIOWrite(x,sizeof(i),&i);
+#define FCIOWriteFloat(x,f)     FCIOWrite(x,sizeof(f),&f);
 #define FCIOWriteInts(x,s,i)    FCIOWrite(x,(s)*sizeof(int),(void*)(i))
 #define FCIOWriteFloats(x,s,f)  FCIOWrite(x,(s)*sizeof(float),(void*)(f))
 #define FCIOWriteUShorts(x,s,i) FCIOWrite(x,(s)*sizeof(short int),(void*)(i))
@@ -592,6 +590,8 @@ static inline int fcio_put_sparseevent(FCIOStream output, fcio_config* config, f
   record_size += FCIOWriteInts(output, event->deadregion_size, event->deadregion);
   record_size += FCIOWriteInts(output,1,&event->num_traces);
   record_size += FCIOWriteUShorts(output,event->num_traces,event->trace_list);
+
+  const int length = config->eventsamples+2;
   int i; for (i = 0; i < event->num_traces; i++)
   {
     int j = event->trace_list[i];
@@ -627,7 +627,6 @@ Returns 1 on success or 0 on error.
 
   return fcio_put_sparseevent(output, &input->config, &input->event);
 }
-
 
 
 static inline int fcio_put_eventheader(FCIOStream output, fcio_config* config, fcio_event* event)
@@ -724,6 +723,7 @@ Returns 1 on success or 0 on error.
     fprintf(stderr, "FCIOPutRecEvent/ERROR: Output not connected.\n");
     return 0;
   }
+  return fcio_put_recevent(output, &input->config, &input->recevent);
 }
 
 
