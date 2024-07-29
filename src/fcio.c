@@ -107,8 +107,8 @@ and may be set before initialization of a context structure.
 
 ///// Header ///////////////////////////////////////////////////////
 
-#define FCIOWriteInt(x,i)       FCIOWrite(x,sizeof(i),&i);
-#define FCIOWriteFloat(x,f)     FCIOWrite(x,sizeof(f),&f);
+#define FCIOWriteInt(x,i)       { int data=(int)(i); FCIOWrite(x,sizeof(int),&data); }
+#define FCIOWriteFloat(x,f)     { float data=(int)(f); FCIOWrite(x,sizeof(float),&data); }
 #define FCIOWriteInts(x,s,i)    FCIOWrite(x,(s)*sizeof(int),(void*)(i))
 #define FCIOWriteFloats(x,s,f)  FCIOWrite(x,(s)*sizeof(float),(void*)(f))
 #define FCIOWriteUShorts(x,s,i) FCIOWrite(x,(s)*sizeof(short int),(void*)(i))
@@ -443,7 +443,8 @@ FCIOStream FCIOStreamHandle(FCIOData *x)
 
 /*--- Description ------------------------------------------------//
 
-Returns the internal FCIOStream object on success or NULL on error.
+Returns the FCIOStream object which was used to open the stream
+on success or NULL on error.
 
 //----------------------------------------------------------------*/
 {

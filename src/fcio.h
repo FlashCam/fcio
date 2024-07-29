@@ -30,8 +30,9 @@ int FCIODebug(int level)
 #define FCIOReadFloats(x,s,f)   FCIORead(x,(s)*sizeof(float),(void*)(f))
 #define FCIOReadUShorts(x,s,i)  FCIORead(x,(s)*sizeof(short int),(void*)(i))
 
-#define FCIOWriteInt(x,i)       FCIOWrite(x,sizeof(i),&i);
-#define FCIOWriteFloat(x,f)     FCIOWrite(x,sizeof(f),&f);
+
+#define FCIOWriteInt(x,i)       { int data=(int)(i); FCIOWrite(x,sizeof(int),&data); }
+#define FCIOWriteFloat(x,f)     { float data=(int)(f); FCIOWrite(x,sizeof(float),&data); }
 #define FCIOWriteInts(x,s,i)    FCIOWrite(x,(s)*sizeof(int),(void*)(i))
 #define FCIOWriteFloats(x,s,f)  FCIOWrite(x,(s)*sizeof(float),(void*)(f))
 #define FCIOWriteUShorts(x,s,i) FCIOWrite(x,(s)*sizeof(short int),(void*)(i))
@@ -48,7 +49,7 @@ int FCIODebug(int level)
 
 typedef struct {                 // Readout configuration (typically once at start of run)
 
-  int telid;                     // trace event list id ;-) 
+  int telid;                     // trace event list id ;-)
   int adcs;                      // Number of FADC channels
   int triggers;                  // Number of trigger channels
   int eventsamples;              // Number of FADC samples per trace
@@ -129,7 +130,7 @@ typedef struct {                  // Reconstructed event
                                   // [2] the calculated sec which must be added to the master
                                   // [3] the delta time between master and unix in usec
                                   // [4] the abs(time) between master and unix in usec
-                                  // [5] startsec 
+                                  // [5] startsec
                                   // [6] startusec
                                   // [7-9] reserved for future use
 
@@ -182,7 +183,7 @@ typedef struct {
 typedef struct {        // Readout status (~1 Hz, programmable)
 
   int status;           // 0: Errors occured, 1: no errors
-  int statustime[10];   // fc250 seconds, microseconds, CPU seconds, microseconds, dummy, startsec startusec 
+  int statustime[10];   // fc250 seconds, microseconds, CPU seconds, microseconds, dummy, startsec startusec
   int cards;            // Total number of cards (number of status data to follow)
   int size;             // Size of each status data
 
