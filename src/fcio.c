@@ -733,34 +733,29 @@ valid record tags are described above
 This function wraps the family of FCIOPut<Event/RecEvent/Config/Status>
 functions. Refer to their documentation for more details.
 
-Returns the number of bytes written.
+Passes the return of value of the individual FCIOPut functions
+or 0 on unkown tag.
 
 //----------------------------------------------------------------*/
 {
   switch (tag) {
     case FCIOEvent:
-      fcio_put_event(output, &input->config, &input->event);
-      break;
+      return fcio_put_event(output, &input->config, &input->event);
 
     case FCIOSparseEvent:
-      fcio_put_sparseevent(output, &input->config, &input->event);
-      break;
+      return fcio_put_sparseevent(output, &input->config, &input->event);
 
     case FCIORecEvent:
-      fcio_put_recevent(output, &input->config, &input->recevent);
-      break;
+      return fcio_put_recevent(output, &input->config, &input->recevent);
 
     case FCIOConfig:
-      fcio_put_config(output, &input->config);
-      break;
+      return fcio_put_config(output, &input->config);
 
     case FCIOStatus:
-      fcio_put_status(output, &input->status);
-      break;
+      return fcio_put_status(output, &input->status);
 
     case FCIOEventHeader:
-      fcio_put_eventheader(output, &input->config, &input->event);
-      break;
+      return fcio_put_eventheader(output, &input->config, &input->event);
   }
   return 0;
 }
@@ -905,9 +900,8 @@ static inline void fcio_get_eventheader(FCIOStream stream, fcio_config* config, 
   }
 }
 
-static inline int fcio_get_recevent(FCIOStream stream, fcio_recevent *recevent)
+static inline void fcio_get_recevent(FCIOStream stream, fcio_recevent *recevent)
 {
-  int flags_size, amplitudes_size, times_size, frame_size = 0;
   FCIOReadInt(stream,recevent->type);
   FCIOReadFloat(stream,recevent->pulser);
   recevent->timeoffset_size = FCIOReadInts(stream,10,recevent->timeoffset)/sizeof(int);
@@ -915,9 +909,9 @@ static inline int fcio_get_recevent(FCIOStream stream, fcio_recevent *recevent)
   recevent->deadregion_size = FCIOReadInts(stream,10,recevent->deadregion)/sizeof(int);
   FCIOReadInt(stream, recevent->totalpulses);
   FCIOReadInts(stream,FCIOMaxChannels,recevent->channel_pulses);
-  flags_size = FCIOReadInts(stream,FCIOMaxPulses,recevent->flags)/sizeof(int);
-  amplitudes_size = FCIOReadFloats(stream,FCIOMaxPulses,recevent->amplitudes)/sizeof(float);
-  times_size = FCIOReadFloats(stream,FCIOMaxPulses,recevent->times)/sizeof(float);
+  int flags_size = FCIOReadInts(stream,FCIOMaxPulses,recevent->flags)/sizeof(int);
+  int amplitudes_size = FCIOReadFloats(stream,FCIOMaxPulses,recevent->amplitudes)/sizeof(float);
+  int times_size = FCIOReadFloats(stream,FCIOMaxPulses,recevent->times)/sizeof(float);
 
   if ( (flags_size != amplitudes_size) || (amplitudes_size != times_size) || (times_size != recevent->totalpulses)) {
     fprintf(stderr, "FCIO/fcio_get_recevent/WARNING: Mismatch in pulse parameter sizes: totalpulses %d flags %d amplitudes %d times %d\n",
@@ -931,7 +925,6 @@ static inline int fcio_get_recevent(FCIOStream stream, fcio_recevent *recevent)
       fprintf(stderr," %d",recevent->timestamp[i]);
     fprintf(stderr,"\n");
   }
-  return frame_size;
 }
 
 /*=== Function ===================================================*/
@@ -1219,7 +1212,7 @@ int FCIOWriteMessage(FCIOStream x, int tag)
 /*--- Description ------------------------------------------------//
 
 starts a message with tag
-returns number of bytes written
+returns 1 on succes or 0 on error.
 
 //----------------------------------------------------------------*/
 {
@@ -1228,7 +1221,7 @@ if(xio==0) return 0;
 tmio_write_tag(xio,tag);
 if((tmio_status(xio)<0) && debug) fprintf(stderr,"FCIOWriteMessage/ERROR: writing tag %d \n",tag);
 else if(debug>5)  fprintf(stderr,"FCIOWriteMessage: tag %d @ %p \n",tag,(void*)xio);
-return sizeof(tag); // the size of the tag in bytes
+return 1; // the size of the tag in bytes
 }
 
 
@@ -1240,7 +1233,7 @@ int FCIOWrite(FCIOStream x, int size, void *data)
 
 write a data item of size bytes length.
 data must point to the data buffer to transfer.
-returns number of bytes written
+returns 1 on success or 0 in error.
 
 //----------------------------------------------------------------*/
 {
@@ -1249,7 +1242,7 @@ if(xio==0) return 0;
 int frame_size = tmio_write_data(xio, data, size);
 if((tmio_status(xio)<0) && debug) fprintf(stderr,"FCIOWrite/ERROR: writing data of size %d/%d\n",frame_size,size);
 else if(debug>5) fprintf(stderr,"FCIOWrite: size %d/%d @ %p \n",frame_size,size,(void*)xio);
-return frame_size;
+return 1;
 }
 
 
@@ -1309,7 +1302,7 @@ int FCIORead(FCIOStream x, int size, void *data)
 
 read a data item of size bytes length.
 data must point to the data buffer where data is copied to.
-returns tmio frame_size (in bytes) on success or 0 on error
+returns 1 on success or 0 on error
 
 //----------------------------------------------------------------*/
 {
@@ -1318,7 +1311,7 @@ if(xio==0) return 0;
 int frame_size = tmio_read_data(xio, data, size);
 if(tmio_status(xio)<0 && debug>0) fprintf(stderr,"FCIORead/WARNING: reading data of size %d/%d\n",frame_size,size);
 else if(debug>5) fprintf(stderr,"FCIORead: size %d/%d @ %lx \n",frame_size,size,(long)xio);
-return frame_size;
+return 1;
 }
 
 
