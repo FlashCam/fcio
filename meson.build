@@ -11,7 +11,7 @@ project('fcio', 'c',
    ]
 )
 
-tmio_dep = dependency('tmio', fallback : ['tmio', 'tmio_dep'])
+tmio_dep = dependency('tmio', fallback : ['tmio', 'tmio_dep'], default_options: ['prefer_static=true'] )
 
 fcio_inc= include_directories('src')
 
