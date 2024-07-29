@@ -8,7 +8,7 @@ int usage(const char* name)
   fprintf(stderr, "\n%s: <input> <output>", name);
   fprintf(stderr, "\n\n"
     "Removes the trace memory fields from FCIOEvent and FCIOSparseEvent records.\n"
-    "Replaces them with FCIOEventHeader records in <output.\n"
+    "Replaces them with FCIOEventHeader records in <output>.\n"
     );
   return 1;
 }
@@ -31,7 +31,7 @@ int main(int argc, const char* argv[])
       }
       default: {
         FCIOPutRecord(out,io,tag);
-        break;       
+        break;
       }
     }
   }
