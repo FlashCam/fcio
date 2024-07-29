@@ -157,7 +157,7 @@ readers of the FCIO files/streams
 
 typedef struct {                 // Readout configuration (typically once at start of run)
 
-  int telid;                     // trace event list id ;-) 
+  int telid;                     // trace event list id ;-)
   int adcs;                      // Number of FADC channels
   int triggers;                  // Number of trigger channels
   int eventsamples;              // Number of FADC samples per trace
@@ -238,7 +238,7 @@ typedef struct {                  // Reconstructed event
                                   // [2] the calculated sec which must be added to the master
                                   // [3] the delta time between master and unix in usec
                                   // [4] the abs(time) between master and unix in usec
-                                  // [5] startsec 
+                                  // [5] startsec
                                   // [6] startusec
                                   // [7-9] reserved for future use
 
@@ -279,7 +279,7 @@ typedef struct {                  // Reconstructed event
 typedef struct {        // Readout status (~1 Hz, programmable)
 
   int status;           // 0: Errors occured, 1: no errors
-  int statustime[10];   // fc250 seconds, microseconds, CPU seconds, microseconds, dummy, startsec startusec 
+  int statustime[10];   // fc250 seconds, microseconds, CPU seconds, microseconds, dummy, startsec startusec
   int cards;            // Total number of cards (number of status data to follow)
   int size;             // Size of each status data
 
@@ -778,17 +778,17 @@ static inline void fcio_get_config(FCIOStream stream, fcio_config *config)
     fprintf(stderr,"FCIO/fcio_get_config: %d/%d/%d adcs %d triggers %d samples %d adcbits %d blprec %d sumlength %d gps %d\n",
       config->mastercards, config->triggercards, config->adccards,
       config->adcs,config->triggers,config->eventsamples,config->adcbits,config->blprecision,config->sumlength,config->gps);
-  if(debug > 3 ) 
+  if(debug > 3 )
   {
-    int i; 
-    for(i=0;i<config->adcs+config->triggers;i++)     
+    int i;
+    for(i=0;i<config->adcs+config->triggers;i++)
        fprintf(stderr,"FCIO/fcio_get_config: trace %d mapped to 0x%x \n",i,config->tracemap[i]);
   }
 }
 
 static inline void fcio_get_status(FCIOStream stream, fcio_status *status)
 {
-  int i; 
+  int i;
   FCIOReadInt(stream,status->status);
   FCIOReadInts(stream,10,status->statustime);
   FCIOReadInt(stream,status->cards);
@@ -824,15 +824,15 @@ static inline void fcio_get_event(FCIOStream stream, fcio_event *event, int trac
   event->deadregion_size = FCIOReadInts(stream,10,event->deadregion)/sizeof(int);
   // If a FCIOEvent is read, but there might have been a sparse event before in the datastream,
   // num_traces and trace_list might not match the expected full event structure
-  if(event->num_traces!=traces) 
+  if(event->num_traces!=traces)
   {
     event->num_traces=traces;
     int i; for(i=0;i<traces;i++)
-      event->trace_list[i]=i;   
+      event->trace_list[i]=i;
   }
   event->deadregion[5]=0;
   event->deadregion[6]=traces;
-  if (debug > 3) 
+  if (debug > 3)
   {
     fprintf(stderr,"FCIO/fcio_get_event: type %d pulser %g, offset %d %d %d traces %d timestamp ",
       event->type,event->pulser,event->timeoffset[0],event->timeoffset[1],event->timeoffset[2],event->num_traces);
@@ -849,23 +849,23 @@ static inline void fcio_get_sparseevent(FCIOStream stream, fcio_event *event, in
   event->timeoffset_size = FCIOReadInts(stream,10,event->timeoffset)/sizeof(int);
   event->timestamp_size = FCIOReadInts(stream,10,event->timestamp)/sizeof(int);
   event->deadregion_size = FCIOReadInts(stream,10,event->deadregion)/sizeof(int);
-  
+
   FCIOReadInts(stream,1,&event->num_traces);
   FCIOReadUShorts(stream,event->num_traces,event->trace_list);
-  int i; 
+  int i;
   for(i=0; i<event->num_traces; i++)
     FCIOReadUShorts(stream,tracesamples,&event->traces[event->trace_list[i]*tracesamples]);
 
-  if (debug > 3) 
+  if (debug > 3)
   {
-    int i; 
+    int i;
     fprintf(stderr,"FCIO/fcio_get_sparse_event: type %d pulser %g, offset %d %d %d ",event->type,event->pulser,event->timeoffset[0],event->timeoffset[1],event->timeoffset[2]);
     fprintf(stderr,"timestamp "); for (i = 0; i < 10; i++) fprintf(stderr,"%d ",event->timestamp[i]);
     fprintf(stderr,"dead "); for (i = 0; i < 10; i++) fprintf(stderr,"%d ",event->deadregion[i]);
-    //fprintf(stderr," traces "); 
-    //for (i = 0; i < event->num_traces; i++) fprintf(stderr," %d",event->trace_list[i]); 
+    //fprintf(stderr," traces ");
+    //for (i = 0; i < event->num_traces; i++) fprintf(stderr," %d",event->trace_list[i]);
     fprintf(stderr,"\n");
-    
+
   }
 }
 
@@ -1612,7 +1612,7 @@ static int get_next_record(FCIOStateReader *reader, int timeout)
         event->theader[j] = &event->traces[j * (config->eventsamples + 2)];
       }
     } else {
-      fprintf(stderr, "[WARNING] Received sparse event without known configuration. Unable to adjust trace pointers.\n");
+      fprintf(stderr, "[WARNING] Received event header without known configuration. Unable to adjust trace pointers.\n");
     }
 
     reader->cur_event = (reader->cur_event + 1) % reader->max_states;
@@ -1620,7 +1620,7 @@ static int get_next_record(FCIOStateReader *reader, int timeout)
     break;
   }
 
-  
+
 
   // Fill current state buffer
   FCIOState *state = &reader->states[reader->cur_state];
