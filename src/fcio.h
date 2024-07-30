@@ -48,7 +48,7 @@ int FCIODebug(int level)
 
 typedef struct {                 // Readout configuration (typically once at start of run)
 
-  int telid;                     // trace event list id ;-) 
+  int telid;                     // trace event list id ;-)
   int adcs;                      // Number of FADC channels
   int triggers;                  // Number of trigger channels
   int eventsamples;              // Number of FADC samples per trace
@@ -129,7 +129,7 @@ typedef struct {                  // Reconstructed event
                                   // [2] the calculated sec which must be added to the master
                                   // [3] the delta time between master and unix in usec
                                   // [4] the abs(time) between master and unix in usec
-                                  // [5] startsec 
+                                  // [5] startsec
                                   // [6] startusec
                                   // [7-9] reserved for future use
 
@@ -182,7 +182,7 @@ typedef struct {
 typedef struct {        // Readout status (~1 Hz, programmable)
 
   int status;           // 0: Errors occured, 1: no errors
-  int statustime[10];   // fc250 seconds, microseconds, CPU seconds, microseconds, dummy, startsec startusec 
+  int statustime[10];   // fc250 seconds, microseconds, CPU seconds, microseconds, dummy, startsec startusec
   int cards;            // Total number of cards (number of status data to follow)
   int size;             // Size of each status data
 
@@ -220,6 +220,20 @@ typedef struct {                   // FlashCam envelope structure
 
 } FCIOData;
 
+
+/*
+  List of records tags to identify known records.
+  FCIOGetRecord and FCIOGet(Next)State read known tags
+  into the corresponding data structures, and return
+  the tag only otherwise.
+
+  Exception: FCIOFSP<name> tags, are only reserved
+  to prevent future use, but are not read by
+  FCIOOpen / FCIOCreateStateReader.
+  libfsp provides the corresponding corresponding read functions.
+
+*/
+
 typedef enum {
   FCIOConfig = 1,
   FCIOCalib = 2, // deprecated
@@ -228,9 +242,9 @@ typedef enum {
   FCIORecEvent = 5,
   FCIOSparseEvent = 6,
   FCIOEventHeader = 7,
-  FCIOFSPConfig = 8,
-  FCIOFSPEvent = 9,
-  FCIOFSPStatus = 10
+  FCIOFSPConfig = 8, // reserved for libfsp
+  FCIOFSPEvent = 9, // reserved for libfsp
+  FCIOFSPStatus = 10 // reserved for libfsp
 } FCIOTag;
 
 typedef void* FCIOStream;

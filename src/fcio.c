@@ -326,7 +326,18 @@ typedef struct {                   // FlashCam envelope structure
 
 } FCIOData;
 
-// valid record tags ... all other tags are skipped
+/*
+  List of records tags to identify known records.
+  FCIOGetRecord and FCIOGet(Next)State read known tags
+  into the corresponding data structures, and return
+  the tag only otherwise.
+
+  Exception: FCIOFSP<name> tags, are only reserved
+  to prevent future use, but are not read by
+  FCIOOpen / FCIOCreateStateReader.
+  libfsp provides the corresponding corresponding read functions.
+
+*/
 
 typedef enum {
   FCIOConfig = 1,
@@ -336,9 +347,9 @@ typedef enum {
   FCIORecEvent = 5,
   FCIOSparseEvent = 6,
   FCIOEventHeader = 7,
-  FCIOFSPConfig = 8,
-  FCIOFSPEvent = 9,
-  FCIOFSPStatus = 10
+  FCIOFSPConfig = 8, // reserved for libfsp
+  FCIOFSPEvent = 9, // reserved for libfsp
+  FCIOFSPStatus = 10 // reserved for libfsp
 } FCIOTag;
 
 //----------------------------------------------------------------*/
