@@ -415,7 +415,7 @@ Returns a FCIOData structure or 0 on error.
   x->ptmio=(void*)FCIOConnect(name,'r',timeout,buffer);
   if(x->ptmio==0)
   {
-    if(debug) fprintf(stderr,"FCIOOpen: can not connect to data source %s \n",(name)?name:"(NULL)");
+    if(debug) fprintf(stderr,"FCIOOpen/ERROR: can not connect to data source %s \n",(name)?name:"(NULL)");
     free(x);
     return 0;
   }
@@ -435,16 +435,16 @@ Disconnects to any FCIOData source and closes any communication to
 the endpoint and frees all associated data. x becomes invalid
 after the function call.
 
-returns 1 on success or 0 on error
+Returns 0 on success or <0 on error.
 
 //----------------------------------------------------------------*/
 {
-  if (!x) return 0;
+  if (!x) return -1;
   FCIOStream xio=x->ptmio;
   FCIODisconnect(xio);
   free(x);
-  if(debug>2) fprintf(stderr,"FCIOClose: closed\n");
-  return 1;
+  if(debug > 3) fprintf(stderr,"FCIOClose/DEBUG: closed\n");
+  return 0;
 }
 
 
@@ -460,14 +460,14 @@ Returns the internal FCIOStream object on success or NULL on error.
 {
   if(!x) return NULL;
   FCIOStream xio=x->ptmio;
-  if(debug>2) fprintf(stderr,"FCIOStream/DEBUG: return stream pointer.\n");
+  if(debug > 3) fprintf(stderr,"FCIOStream/DEBUG: return stream pointer.\n");
   return xio;
 }
 
 
 static inline int fcio_put_config(FCIOStream output, fcio_config* config)
 {
-  if (!output || !config) return 0;
+  if (!output || !config) return -1;
   FCIOWriteMessage(output,FCIOConfig);
   FCIOWriteInt(output,config->adcs);
   FCIOWriteInt(output,config->triggers);
@@ -493,13 +493,17 @@ int FCIOPutConfig(FCIOStream output, FCIOData *input)
 Writes a record of config data (struct fcio_config) to remote peer or file.
 A record consist of the message tag and all data members of the struct.
 
-Returns 1 on success or 0 on error.
+Returns 0 on success or <0 on error.
 
 //----------------------------------------------------------------*/
 {
-  if (!output||!input){
+  if (!output) {
     fprintf(stderr, "FCIOPutConfig/ERROR: Output not connected.\n");
-    return 0;
+    return -1;
+  }
+  if (!input) {
+    fprintf(stderr, "FCIOPutConfig/ERROR: Input not valid (null pointer).\n");
+    return -1;
   }
 
   return fcio_put_config(output, &input->config);
@@ -508,7 +512,7 @@ Returns 1 on success or 0 on error.
 
 static inline int fcio_put_status(FCIOStream output, fcio_status* status)
 {
-  if (!output || !status) return 0;
+  if (!output || !status) return -1;
   FCIOWriteMessage(output, FCIOStatus);
   FCIOWriteInt(output, status->status);
   FCIOWriteInts(output, 10, status->statustime);
@@ -532,13 +536,13 @@ A record consist of the message tag and all data members of the struct.
 The size of status.data from individual cards is sent depending on
 status.cards and status.size.
 
-Returns 1 on success or 0 on error.
+Returns 0 on success or <0 on error.
 
 //----------------------------------------------------------------*/
 {
-  if (!output||!input){
+  if (!output || !input){
     fprintf(stderr, "FCIOPutStatus/ERROR: Output not connected.\n");
-    return 0;
+    return -1;
   }
 
   return fcio_put_status(output, &input->status);
@@ -555,7 +559,6 @@ static inline int fcio_put_event(FCIOStream output, fcio_config* config, fcio_ev
   FCIOWriteInts(output, event->timestamp_size, event->timestamp);
   FCIOWriteUShorts(output,(config->adcs+config->triggers)*(config->eventsamples+2),event->traces);
   FCIOWriteInts(output, event->deadregion_size, event->deadregion);
-
   return FCIOFlush(output);
 }
 
@@ -574,13 +577,13 @@ to remote depends on their corresponding *_size items.
 The number of items in event.traces sent to remote depends on
 (config.adcs + config.triggers) * (config.eventsamples+2).
 
-Returns 1 on success or 0 on error.
+Returns 0 on success or <0 on error.
 
 //----------------------------------------------------------------*/
 {
-  if (!output||!input){
+  if (!output || !input){
     fprintf(stderr, "FCIOPutEvent/ERROR: Output not connected.\n");
-    return 0;
+    return -1;
   }
 
   return fcio_put_event(output, &input->config, &input->event);
@@ -625,13 +628,13 @@ to remote depends on their corresponding *_size items.
 The number of traces sent depends on the trace_list array (with actual size num_traces).
 Only those traces, whose index is stored in trace_list will be serialized.
 
-Returns 1 on success or 0 on error.
+Returns 0 on success or <0 on error.
 
 //----------------------------------------------------------------*/
 {
   if (!output){
     fprintf(stderr, "FCIOPutSparseEvent/ERROR: Output not connected.\n");
-    return 0;
+    return -1;
   }
 
   return fcio_put_sparseevent(output, &input->config, &input->event);
@@ -640,7 +643,7 @@ Returns 1 on success or 0 on error.
 
 static inline int fcio_put_eventheader(FCIOStream output, fcio_config* config, fcio_event* event)
 {
-  if (!output || !config || !event) return 0;
+  if (!output || !config || !event) return -1;
   FCIOWriteMessage(output,FCIOEventHeader);
   FCIOWriteInt(output,event->type);
   FCIOWriteFloat(output,event->pulser);
@@ -677,13 +680,13 @@ to remote depends on their corresponding *_size items.
 The number of theader sent depends on the trace_list array (with actual size num_traces).
 Only those traces, whose index is stored in trace_list will be serialized.
 
-Returns 1 on success or 0 on error.
+Returns 0 on success or <0 on error.
 
 //----------------------------------------------------------------*/
 {
-  if (!output||!input){
+  if (!output || !input){
     fprintf(stderr, "FCIOPutEventHeader/ERROR: Output not connected.\n");
-    return 0;
+    return -1;
   }
 
   return fcio_put_eventheader(output, &input->config, &input->event);
@@ -691,7 +694,7 @@ Returns 1 on success or 0 on error.
 
 static inline int fcio_put_recevent(FCIOStream output, fcio_config* config, fcio_recevent* recevent)
 {
-  if (!output || !config || !recevent) return 0;
+  if (!output || !config || !recevent) return -1;
   FCIOWriteMessage(output,FCIORecEvent);
   FCIOWriteInt(output, recevent->type);
   FCIOWriteFloat(output, recevent->pulser);
@@ -724,13 +727,13 @@ The number of items in recevent.channel_pulses depends on config.adcs.
 The number of items in recevent.flags, recevent.amplitudes and recevent.times
 depends on recevent.totalpulses.
 
-Returns 1 on success or 0 on error.
+Returns 0 on success or <0 on error.
 
 //----------------------------------------------------------------*/
 {
-  if (!output||!input){
+  if (!output || !input){
     fprintf(stderr, "FCIOPutRecEvent/ERROR: Output not connected.\n");
-    return 0;
+    return -1;
   }
   return fcio_put_recevent(output, &input->config, &input->recevent);
 }
@@ -751,7 +754,7 @@ valid record tags are described above
 This function wraps the family of FCIOPut<Event/RecEvent/Config/Status>
 functions. Refer to their documentation for more details.
 
-Returns 1 on success, 0 on unknown tag or <0 on error.
+Returns 0 success or <0 on error.
 
 //----------------------------------------------------------------*/
 {
@@ -777,19 +780,25 @@ Returns 1 on success, 0 on unknown tag or <0 on error.
     case FCIOEventHeader:
       return fcio_put_eventheader(output, &input->config, &input->event);
   }
-  return 0;
+  return -2;
 }
 
 static inline int fcio_get_config(FCIOStream stream, fcio_config *config)
 {
-  if (!stream || !config)
-    return -1;
+  if (!stream || !config) return -1;
 
   FCIOReadInt(stream,config->adcs);
   FCIOReadInt(stream,config->triggers);
+  const int num_configured_channels = config->adcs + config->triggers;
+  if (num_configured_channels > FCIOMaxChannels) {
+    if (debug)
+      fprintf(stderr, "FCIO/fcio_get_config/ERROR: number of adc %d and trigger %d channels exceeds maximum allowed channels %d\n", config->adcs, config->triggers, FCIOMaxChannels);
+    return -1;
+  }
   FCIOReadInt(stream,config->eventsamples);
   if (config->eventsamples > FCIOMaxSamples) {
-    fprintf(stderr, "FCIO/fcio_get_config/ERROR: eventsamples exceed maximum allowed samples %d > %d\n", config->eventsamples, FCIOMaxSamples);
+    if (debug)
+      fprintf(stderr, "FCIO/fcio_get_config/ERROR: eventsamples exceed maximum allowed samples %d > %d\n", config->eventsamples, FCIOMaxSamples);
     return -1;
   }
   FCIOReadInt(stream,config->blprecision);
@@ -799,23 +808,23 @@ static inline int fcio_get_config(FCIOStream stream, fcio_config *config)
   FCIOReadInt(stream,config->triggercards);
   FCIOReadInt(stream,config->adccards);
   FCIOReadInt(stream,config->gps);
-  int expected_tracemap_size = config->adcs + config->triggers;
-  int read_tracemap_size = FCIOReadInts(stream,expected_tracemap_size,config->tracemap)/sizeof(int);
+  int tracemap_size = FCIOReadInts(stream, FCIOMaxChannels, config->tracemap)/sizeof(int);
 
   if (debug > 3 )
-    fprintf(stderr,"FCIO/fcio_get_config: %d/%d/%d adcs %d triggers %d samples %d adcbits %d blprec %d sumlength %d gps %d\n",
+    fprintf(stderr,"FCIO/fcio_get_config/DEBUG: %d/%d/%d adcs %d triggers %d samples %d adcbits %d blprec %d sumlength %d gps %d\n",
       config->mastercards, config->triggercards, config->adccards,
       config->adcs,config->triggers,config->eventsamples,config->adcbits,config->blprecision,config->sumlength,config->gps);
   if (debug > 4 ) {
-    for(int i = 0; i < read_tracemap_size; i++)
-       fprintf(stderr,"FCIO/fcio_get_config: trace %d mapped to 0x%x\n",i,config->tracemap[i]);
+    for(int i = 0; i < tracemap_size; i++)
+       fprintf(stderr,"FCIO/fcio_get_config/DEBUG: trace %d mapped to 0x%x\n",i,config->tracemap[i]);
   }
 
-  if (read_tracemap_size != expected_tracemap_size) {
-    fprintf(stderr, "FCIO/fcio_get_config/WARNING: got unexpected tracemap size %d/%d\n", read_tracemap_size, expected_tracemap_size);
-    return 0;
+  // if tracemap size does not match, there is probable
+  if (tracemap_size && tracemap_size != num_configured_channels) {
+    fprintf(stderr, "FCIO/fcio_get_config/WARNING: got unexpected tracemap size %d/%d\n", tracemap_size, num_configured_channels);
+    return 1;
   }
-  return 1;
+  return 0;
 }
 
 static inline int fcio_get_status(FCIOStream stream, fcio_status *status)
@@ -834,13 +843,13 @@ static inline int fcio_get_status(FCIOStream stream, fcio_status *status)
     int totalerrors = 0;
     for (int i = 0; i < status->cards; i++)
       totalerrors += status->data[i].totalerrors;
-    fprintf(stderr,"FCIO/fcio_get_status: overall %d errors %d time pps %d ticks %d unix %d %d delta %d cards %d\n",
+    fprintf(stderr,"FCIO/fcio_get_status/DEBUG: overall %d errors %d time pps %d ticks %d unix %d %d delta %d cards %d\n",
       status->status,totalerrors,status->statustime[0], status->statustime[1],status->statustime[2],
       status->statustime[3],status->statustime[4],status->cards);
 
     if (debug > 4) {
       for (int i = 0; i < status->cards; i++) {
-        fprintf(stderr,"FCIO/fcio_get_status: card %d: status %d errors %d time %d %9d env",i,
+        fprintf(stderr,"FCIO/fcio_get_status/DEBUG: card %d: status %d errors %d time %d %9d env",i,
           status->data[i].status,status->data[i].totalerrors,status->data[i].pps,status->data[i].ticks);
         if (debug > 5) {
           for (int i1 = 0; i1 < (int)status->data[i].numenv; i1++)
@@ -850,7 +859,7 @@ static inline int fcio_get_status(FCIOStream stream, fcio_status *status)
       }
     }
   }
-  return 1;
+  return 0;
 }
 
 static inline int fcio_get_event(FCIOStream stream, fcio_event *event, int num_expected_traces)
@@ -877,9 +886,8 @@ static inline int fcio_get_event(FCIOStream stream, fcio_event *event, int num_e
   event->deadregion[5] = 0;
   event->deadregion[6] = num_expected_traces;
 
-  if (debug > 3)
-  {
-    fprintf(stderr,"FCIO/fcio_get_event: type %d pulser %g, offset %d %d %d traces %d timestamp[%d] ",
+  if (debug > 3) {
+    fprintf(stderr,"FCIO/fcio_get_event/DEBUG: type %d pulser %g, offset %d %d %d traces %d timestamp[%d] ",
       event->type,event->pulser,event->timeoffset[0],event->timeoffset[1],event->timeoffset[2],event->num_traces, event->timestamp_size);
     for (int i = 0; i < event->timestamp_size; i++)
       fprintf(stderr," %d",event->timestamp[i]);
@@ -888,7 +896,7 @@ static inline int fcio_get_event(FCIOStream stream, fcio_event *event, int num_e
       fprintf(stderr," %d",event->deadregion[i]);
     fprintf(stderr,"\n");
   }
-  return 1;
+  return 0;
 }
 
 static inline int fcio_get_sparseevent(FCIOStream stream, fcio_event *event, int tracesamples)
@@ -908,21 +916,21 @@ static inline int fcio_get_sparseevent(FCIOStream stream, fcio_event *event, int
   FCIOReadInts(stream,1,&event->num_traces);
   int read_trace_list_size = FCIOReadUShorts(stream, FCIOMaxChannels, event->trace_list)/sizeof(unsigned short);
   if (read_trace_list_size != event->num_traces) {
-    fprintf(stderr, "FCIO/fcio_get_sparsevent/WARNING: trace_list size does not match %d/%d\n", read_trace_list_size, event->num_traces);
+    if (debug > 1) fprintf(stderr, "FCIO/fcio_get_sparsevent/WARNING: trace_list size does not match %d/%d\n", read_trace_list_size, event->num_traces);
     if (read_trace_list_size < event->num_traces)
       event->num_traces = read_trace_list_size;
   }
   for (int i = 0; i < event->num_traces; i++) {
     int trace_idx = event->trace_list[i];
     if (trace_idx >= FCIOMaxChannels) {
-      fprintf(stderr, "FCIO/fcio_get_sparsevent/ERROR: trace_list contains out-of-bounds trace index for traces buffer %d/%d\n", trace_idx, FCIOMaxChannels);
+      if (debug) fprintf(stderr, "FCIO/fcio_get_sparsevent/ERROR: trace_list contains out-of-bounds trace index for traces buffer %d/%d\n", trace_idx, FCIOMaxChannels);
       return -1;
     }
     FCIOReadUShorts(stream,tracesamples,&event->traces[event->trace_list[i]*tracesamples]);
   }
 
   if (debug > 3) {
-    fprintf(stderr,"FCIO/fcio_get_sparse_event: type %d pulser %g, offset %d %d %d ",event->type,event->pulser,event->timeoffset[0],event->timeoffset[1],event->timeoffset[2]);
+    fprintf(stderr,"FCIO/fcio_get_sparseevent/DEBUG: type %d pulser %g, offset %d %d %d ",event->type,event->pulser,event->timeoffset[0],event->timeoffset[1],event->timeoffset[2]);
     fprintf(stderr,"timestamp[%d]", event->timestamp_size); for (int i = 0; i < event->timestamp_size; i++) fprintf(stderr," %d",event->timestamp[i]);
     fprintf(stderr,"deadregion[%d]", event->deadregion_size); for (int i = 0; i < event->deadregion_size; i++) fprintf(stderr," %d",event->deadregion[i]);
     if (debug > 4) {
@@ -931,7 +939,7 @@ static inline int fcio_get_sparseevent(FCIOStream stream, fcio_event *event, int
     }
     fprintf(stderr,"\n");
   }
-  return 1;
+  return 0;
 }
 
 static inline int fcio_get_eventheader(FCIOStream stream, fcio_config* config, fcio_event *event)
@@ -948,7 +956,7 @@ static inline int fcio_get_eventheader(FCIOStream stream, fcio_config* config, f
   FCIOReadInts(stream,1,&event->num_traces);
   int read_trace_list_size = FCIOReadUShorts(stream, FCIOMaxChannels, event->trace_list)/sizeof(unsigned short);
   if (read_trace_list_size != event->num_traces) {
-    fprintf(stderr, "FCIO/fcio_get_eventheader/WARNING: trace_list size does not match %d/%d\n", read_trace_list_size, event->num_traces);
+    if (debug > 1) fprintf(stderr, "FCIO/fcio_get_eventheader/WARNING: trace_list size does not match %d/%d\n", read_trace_list_size, event->num_traces);
     if (read_trace_list_size < event->num_traces)
       event->num_traces = read_trace_list_size;
   }
@@ -957,14 +965,14 @@ static inline int fcio_get_eventheader(FCIOStream stream, fcio_config* config, f
   unsigned short read_buffer[FCIOMaxChannels * 2];
   int read_header_elements = FCIOReadUShorts(stream, FCIOMaxChannels * 2, read_buffer)/sizeof(unsigned short)/2;
   if (read_header_elements != event->num_traces) {
-    fprintf(stderr, "FCIO/fcio_get_eventheader/WARNING: trace_list size does not match %d/%d\n", read_trace_list_size, event->num_traces);
+    if (debug > 1) fprintf(stderr, "FCIO/fcio_get_eventheader/WARNING: trace_list size does not match %d/%d\n", read_trace_list_size, event->num_traces);
     if (read_header_elements < event->num_traces)
       event->num_traces = read_header_elements;
   }
   for(int i = 0; i < event->num_traces; i++) {
     int trace_idx = event->trace_list[i];
     if (trace_idx >= FCIOMaxChannels) {
-      fprintf(stderr, "FCIO/fcio_get_eventheader/ERROR: trace_list contains out-of-bounds trace index for traces buffer %d/%d\n", trace_idx, FCIOMaxChannels);
+      if (debug) fprintf(stderr, "FCIO/fcio_get_eventheader/ERROR: trace_list contains out-of-bounds trace index for traces buffer %d/%d\n", trace_idx, FCIOMaxChannels);
       return -1;
     }
     for (int k = 0; k < 2; k++)
@@ -972,7 +980,7 @@ static inline int fcio_get_eventheader(FCIOStream stream, fcio_config* config, f
   }
 
   if (debug > 3) {
-    fprintf(stderr,"FCIO/fcio_get_eventheader: type %d pulser %g, offset %d %d %d ",event->type,event->pulser,event->timeoffset[0],event->timeoffset[1],event->timeoffset[2]);
+    fprintf(stderr,"FCIO/fcio_get_eventheader/DEBUG: type %d pulser %g, offset %d %d %d ",event->type,event->pulser,event->timeoffset[0],event->timeoffset[1],event->timeoffset[2]);
     fprintf(stderr,"timestamp[%d]", event->timestamp_size); for (int i = 0; i < event->timestamp_size; i++) fprintf(stderr," %d",event->timestamp[i]);
     fprintf(stderr,"deadregion[%d]", event->deadregion_size); for (int i = 0; i < event->deadregion_size; i++) fprintf(stderr," %d",event->deadregion[i]);
     if (debug > 5) {
@@ -981,7 +989,7 @@ static inline int fcio_get_eventheader(FCIOStream stream, fcio_config* config, f
       fprintf(stderr,"\n");
     }
   }
-  return 1;
+  return 0;
 }
 
 static inline int fcio_get_recevent(FCIOStream stream, fcio_recevent *recevent)
@@ -1000,19 +1008,19 @@ static inline int fcio_get_recevent(FCIOStream stream, fcio_recevent *recevent)
   int times_size = FCIOReadFloats(stream,FCIOMaxPulses,recevent->times)/sizeof(float);
 
   if (debug > 3) {
-    fprintf(stderr,"FCIO/fcio_get_recevent: type %d pulser %g, offset %d %d %d timestamp ",
+    fprintf(stderr,"FCIO/fcio_get_recevent/DEBUG: type %d pulser %g, offset %d %d %d timestamp ",
         recevent->type,recevent->pulser,recevent->timeoffset[0],recevent->timeoffset[1],recevent->timeoffset[2]);
     for (int i = 0; i < recevent->timestamp_size; i++)
       fprintf(stderr," %d",recevent->timestamp[i]);
     fprintf(stderr,"\n");
   }
 
-  if ( (flags_size != amplitudes_size) || (amplitudes_size != times_size) || (times_size != recevent->totalpulses)) {
-    fprintf(stderr, "FCIO/fcio_get_recevent/WARNING: Mismatch in pulse parameter sizes: totalpulses %d flags %d amplitudes %d times %d\n",
+  if ( (flags_size != amplitudes_size) || (amplitudes_size != times_size) || (times_size != recevent->totalpulses) ) {
+    if ( debug > 1 ) fprintf(stderr, "FCIO/fcio_get_recevent/WARNING: Mismatch in pulse parameter sizes: totalpulses %d flags %d amplitudes %d times %d\n",
       recevent->totalpulses, flags_size, amplitudes_size, times_size);
-    return 0;
+    return 1;
   }
-  return 1;
+  return 0;
 }
 
 /*=== Function ===================================================*/
@@ -1053,9 +1061,11 @@ further items.
       rc = fcio_get_config(xio, &x->config);
 
       // On config, the pointers can be set.
-      for (int i = 0; i < x->config.adcs + x->config.triggers; i++) {
-        x->event.trace[i] = &x->event.traces[2 + i * (x->config.eventsamples + 2)];
-        x->event.theader[i] = &x->event.traces[i * (x->config.eventsamples + 2)];
+      if (rc >= 0) {
+        for (int i = 0; i < x->config.adcs + x->config.triggers; i++) {
+          x->event.trace[i] = &x->event.traces[2 + i * (x->config.eventsamples + 2)];
+          x->event.theader[i] = &x->event.traces[i * (x->config.eventsamples + 2)];
+        }
       }
     break;
 
@@ -1214,37 +1224,34 @@ connection and OS) or -1 to block indefinitely.
 buffer may be used to initialize the size (in kB) of the protocol buffers. If 0
 is specified a default value will be used.
 
-Returns a FCIOStream or 0 on error.
+Returns a FCIOStream or NULL on error.
 
 //----------------------------------------------------------------*/
 {
   const char *proto="FlashCamV1";
-  if(name==0)
-  {
-    if(debug) fprintf(stderr,"FCIOConnect: endpoint not given, output will be discarded \n");
-    return 0;
+  if(name==0) {
+    if(debug) fprintf(stderr,"FCIOConnect/ERROR: endpoint not given, output will be discarded \n");
+    return NULL;
   }
 
   int tmio_debug = debug-3;
   tmio_stream *x=tmio_init(proto, timeout, buffer, tmio_debug<0?0:tmio_debug);
-  if(x==0)
-  {
-    if(debug) fprintf(stderr,"FCIOConnect: error init TMIO structure\n");
-    return 0;
+  if(x==0) {
+    if(debug) fprintf(stderr,"FCIOConnect/ERROR: init of tmio structure failed\n");
+    return NULL;
   }
 
   int rc=-1;
   if(direction=='w') rc=tmio_create(x, name, timeout);
   else if(direction=='r') rc=tmio_open(x, name, timeout);
-  if(rc<0)
-  {
+  if(rc<0) {
     if(debug) fprintf(stderr,"FCIOConnect/ERROR: can not connect to stream %s, %s\n",
         name,tmio_status_str(x));
     tmio_delete(x);
-    return 0;
+    return NULL;
   }
 
-  if(debug>2) fprintf(stderr,"FCIOConnect: %s connected, proto %s \n",name,proto);
+  if(debug>3) fprintf(stderr,"FCIOConnect/DEBUG: %s connected, proto %s \n",name,proto);
   return (FCIOStream)x;
 }
 
@@ -1258,15 +1265,16 @@ int FCIODisconnect(FCIOStream x)
 Disconnects to any FCIOStream and closes any communication to
 the endpoint.
 
-Returns 1 on success and 0 on error.
+Returns 0 on success and <0 on error.
 
 //----------------------------------------------------------------*/
 {
+  if (!x) return -1;
   tmio_stream *xio=(tmio_stream *)x;
-  if(xio==0) return 0;
+
   tmio_delete(xio); // always returns 0
-  if(debug>2) fprintf(stderr,"FCIODisconnect: stream closed\n");
-  return 1;
+  if (debug>3) fprintf(stderr,"FCIODisconnect/DEBUG: stream closed\n");
+  return 0;
 }
 
 
@@ -1300,17 +1308,26 @@ int FCIOWriteMessage(FCIOStream x, int tag)
 
 /*--- Description ------------------------------------------------//
 
-starts a message with tag
-returns 1 on success or 0 on error
+Starts a message with tag
+Returns 0 on success or <0 on error
 
 //----------------------------------------------------------------*/
 {
+  if (!x) return -1;
+  // tmio_write_tag checks for tag validity itself
+
   tmio_stream *xio=(tmio_stream *)x;
-  if(xio==0) return 0;
-  tmio_write_tag(xio,tag);
-  if((tmio_status(xio)<0) && debug) fprintf(stderr,"FCIOWriteMessage/ERROR: writing tag %d \n",tag);
-  else if(debug>5)  fprintf(stderr,"FCIOWriteMessage: tag %d @ %p \n",tag,(void*)xio);
-  return 1;
+
+  if (debug > 5)
+    fprintf(stderr,"FCIOWriteMessage/DEBUG: tag %d @ %p \n",tag,(void*)xio);
+
+  if (tmio_write_tag(xio,tag) ) {
+    if (debug && (tmio_status(xio)<0))
+      fprintf(stderr,"FCIOWriteMessage/ERROR: writing tag %d \n",tag);
+    return -1;
+  }
+
+  return 0;
 }
 
 
@@ -1320,18 +1337,32 @@ int FCIOWrite(FCIOStream x, int size, void *data)
 
 /*--- Description ------------------------------------------------//
 
-write a data item of size bytes length.
-data must point to the data buffer to transfer.
-returns 1 on success or 0 on error
+Write a data item of size bytes length.
+Data must point to the data buffer to transfer.
+Returns size on success, 0 on size < 0 or <0 on error
 
 //----------------------------------------------------------------*/
 {
+  if (!x) {
+    if (debug) fprintf(stderr, "FCIOWrite/ERROR: output not connected\n");
+    return -1;
+  }
+  if (!data) {
+    if (debug) fprintf(stderr, "FCIOWrite/ERROR: data not valid (null pointer)\n");
+    return -1;
+  }
+  // tmio_write_data checks on size < 0 and returns 0
+  // don't need to check here.
+
   tmio_stream *xio=(tmio_stream *)x;
-  if(xio==0) return 0;
-  tmio_write_data(xio, data, size);
-  if((tmio_status(xio)<0) && debug) fprintf(stderr,"FCIOWrite/ERROR: writing data of size %d\n",size);
-  else if(debug>5) fprintf(stderr,"FCIOWrite: size %d @ %p \n",size,(void*)xio);
-  return 1;
+
+  int written_size = tmio_write_data(xio, data, size);
+  if (debug > 5)
+    fprintf(stderr,"FCIOWrite/DEBUG: size %d/%d @ %p \n", written_size, size,(void*)xio);
+  if (debug && written_size != size)
+    fprintf(stderr,"FCIOWrite/ERROR: %s with size %d/%d\n", tmio_status_str(xio), written_size, size);
+
+  return written_size;
 }
 
 
@@ -1343,19 +1374,19 @@ int FCIOFlush(FCIOStream x)
 
 Flush all composed messages.
 
-Returns 1 on success or 0 on error.
+Returns 0 on success or -1 on error.
 
 //----------------------------------------------------------------*/
 {
-tmio_stream *xio=(tmio_stream *)x;
-if(xio==0) return 0;
-tmio_flush(xio);
-if(tmio_status(xio)<0)
-{
-  if(debug) fprintf(stderr,"FCIOFlush/ERROR: %s\n",tmio_status_str(xio));
+  if (!x) return -1;
+  tmio_stream *xio = (tmio_stream *)x;
+
+  if (tmio_flush(xio)) {
+    if (debug)
+      fprintf(stderr,"FCIOFlush/ERROR: %s\n",tmio_status_str(xio));
+    return -1;
+  }
   return 0;
-}
-return 1;
 }
 
 /*=== Reading Messages ===========================================//
@@ -1378,11 +1409,13 @@ Returns the tag (>0) on success or 0 on timeout and <0 on error.
 
 //----------------------------------------------------------------*/
 {
-tmio_stream *xio=(tmio_stream *)x;
-if(xio==0) return -1;
-int tag=tmio_read_tag(xio);
-if(debug>5) fprintf(stderr,"FCIOReadMessage: got tag %d \n",tag);
-return tag;
+  if (!x) return -1;
+  tmio_stream *xio=(tmio_stream *)x;
+
+  int tag = tmio_read_tag(xio);
+  if (debug > 5)
+    fprintf(stderr,"FCIOReadMessage/DEBUG: got tag %d @ %p \n", tag, (void*)xio);
+  return tag;
 }
 
 
@@ -1398,12 +1431,24 @@ Returns tmio frame_size (in bytes) on success or <0 on error
 
 //----------------------------------------------------------------*/
 {
-tmio_stream *xio=(tmio_stream *)x;
-if(xio==0) return -1;
-int frame_size = tmio_read_data(xio, data, size);
-if(tmio_status(xio)<0 && debug>0) fprintf(stderr,"FCIORead/WARNING: reading data of size %d/%d\n",frame_size,size);
-else if(debug>5) fprintf(stderr,"FCIORead: size %d/%d @ %p \n",frame_size,size,(void*)xio);
-return frame_size;
+  if (!x) return -1;
+
+  tmio_stream *xio=(tmio_stream *)x;
+
+  int frame_size = tmio_read_data(xio, data, size);
+  if (debug > 5)
+    fprintf(stderr,"FCIORead/DEBUG: size %d/%d @ %p \n",
+      frame_size, size, (void*)xio);
+
+  if (debug) {
+    if (debug > 1 && frame_size == -2) {
+      fprintf(stderr, "FCIORead/WARNING: got unexpected tag\n");
+    }
+    if (frame_size == -1)
+      fprintf(stderr,"FCIORead/ERROR: %s size %d/%d @ %p\n",
+        tmio_status_str(xio), frame_size,size, (void*)xio);
+  }
+  return frame_size;
 }
 
 
@@ -1461,6 +1506,8 @@ FCIOStateReader *FCIOCreateStateReader(
 
 /*--- Description ------------------------------------------------//
 
+Returns a FCIOStateReader struct on success or NULL on error.
+
 //----------------------------------------------------------------*/
 {
   FCIOStateReader *reader = (FCIOStateReader *) calloc(1, sizeof(FCIOStateReader));
@@ -1516,6 +1563,8 @@ int FCIODestroyStateReader(FCIOStateReader *reader)
 
 /*--- Description ------------------------------------------------//
 
+Returns 0 on success or <0 on error.
+
 //----------------------------------------------------------------*/
 {
   if (!reader)
@@ -1539,6 +1588,8 @@ int FCIOSelectStateTag(FCIOStateReader *reader, int tag)
 
 /*--- Description ------------------------------------------------//
 
+Returns 0 on success or <0 on error.
+
 //----------------------------------------------------------------*/
 {
   if (!tag)
@@ -1557,6 +1608,8 @@ int FCIOSelectStateTag(FCIOStateReader *reader, int tag)
 int FCIODeselectStateTag(FCIOStateReader *reader, int tag)
 
 /*--- Description ------------------------------------------------//
+
+Returns 0 on success or <0 on error.
 
 //----------------------------------------------------------------*/
 {
@@ -1652,12 +1705,12 @@ static int get_next_record(FCIOStateReader *reader, int timeout)
     rc = fcio_get_event(stream, event, config->adcs + config->triggers);
 
     if (config) {
-      int i; for (i = 0; i < config->adcs + config->triggers; i++) {
+      for (int i = 0; i < config->adcs + config->triggers; i++) {
         event->trace[i] = &event->traces[2 + i * (config->eventsamples + 2)];
         event->theader[i] = &event->traces[i * (config->eventsamples + 2)];
       }
-    } else {
-      fprintf(stderr, "[WARNING] Received event without known configuration. Unable to adjust trace pointers.\n");
+    } else if (debug > 1) {
+      fprintf(stderr, "FCIOGetState/WARNING Received event without known configuration. Unable to adjust trace pointers.\n");
     }
 
     reader->cur_event = (reader->cur_event + 1) % reader->max_states;
@@ -1674,8 +1727,8 @@ static int get_next_record(FCIOStateReader *reader, int timeout)
         event->trace[j] = &event->traces[2 + j * (config->eventsamples + 2)];
         event->theader[j] = &event->traces[j * (config->eventsamples + 2)];
       }
-    } else {
-      fprintf(stderr, "[WARNING] Received sparse event without known configuration. Unable to adjust trace pointers.\n");
+    } else if (debug > 1) {
+      fprintf(stderr, "FCIOGetState/WARNING Received sparse event without known configuration. Unable to adjust trace pointers.\n");
     }
 
     reader->cur_event = (reader->cur_event + 1) % reader->max_states;
@@ -1749,6 +1802,11 @@ static inline FCIOState *get_last_state(FCIOStateReader *reader)
 FCIOState *FCIOGetState(FCIOStateReader *reader, int offset, int *timedout)
 
 /*--- Description ------------------------------------------------//
+
+Returns a valid FCIOState on succes, NULL on error.
+If an error has occured the reason can be retrieved from timedout,
+with 0 indicating a stream error, 1 a timeout and 2 arrival of deselected
+tags within the timeout.
 
 //----------------------------------------------------------------*/
 {
@@ -1836,6 +1894,8 @@ FCIOState *FCIOGetNextState(FCIOStateReader *reader, int *timedout)
 
 /*--- Description ------------------------------------------------//
 
+Calls FCIOGetState with offset == 1.
+
 //----------------------------------------------------------------*/
 {
   return FCIOGetState(reader, 1, timedout);
@@ -1847,7 +1907,7 @@ int FCIOPutState(FCIOStream output, FCIOState* state)
 
 /*--- Description ------------------------------------------------//
 
-Returns 1 on success, 0 on unknown tag or <0 on error.
+Returns 0 on success, 0 on unknown tag or <0 on error.
 
 //----------------------------------------------------------------*/
 {
@@ -1873,7 +1933,7 @@ Returns 1 on success, 0 on unknown tag or <0 on error.
     case FCIOEventHeader:
       return fcio_put_eventheader(output, state->config, state->event);
   }
-  return 0;
+  return -2;
 
 }
 
