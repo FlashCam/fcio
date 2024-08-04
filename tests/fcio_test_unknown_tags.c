@@ -6,14 +6,17 @@
 
 #define TESTTAG 31
 #define TESTCONTENT 10
-#define FCIODEBUG 10
+#define FCIODEBUG 2
 
-/* 
+/*
   This test checks if unkown tags are passed to the user by GetRecord and GetNextState without reading any data.
 */
 
 int main(int argc, char* argv[])
 {
+  if (argc != 2)
+    return 1;
+
   FCIODebug(FCIODEBUG);
 
   /* write test file*/
