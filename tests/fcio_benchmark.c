@@ -28,7 +28,6 @@ int main_writer(const char *peer,
                 int events,
                 int bufsize,
                 int connect_timeout,
-                int verbosity,
                 int nadcs,
                 int ntriggers,
                 int eventsamples
@@ -42,12 +41,12 @@ int main_writer(const char *peer,
   init_benchmark_statistics();
 
   FCIOStream stream = FCIOConnect(peer, 'w', connect_timeout, bufsize);
-  if ( !FCIOPutConfig(stream, payload) ) {
+  if ( FCIOPutConfig(stream, payload) ) {
     return msgcounter;
   }
   msgcounter++;
   for (int i = 0; i < events; i++) {
-    if( !FCIOPutRecord(stream, payload, FCIOEvent) ) {
+    if( FCIOPutRecord(stream, payload, FCIOEvent) ) {
       break;
     }
     msgcounter++;
@@ -62,8 +61,8 @@ int main_writer(const char *peer,
 
 int main_reader(const char *peer,
                 int bufsize,
-                int connect_timeout,
-                int verbosity)
+                int connect_timeout
+                )
 {
   int tag;
   int msgcounter = 0;
@@ -175,20 +174,20 @@ int main(int argc, char **argv)
   if (no_fork) {
     if (write_peer) {
       usleep(write_delay);
-      assert(main_writer(write_peer, events, bufsize, timeout, verbosity, nadcs, ntriggers, eventsamples) == n_expected_records);
+      assert(main_writer(write_peer, events, bufsize, timeout, nadcs, ntriggers, eventsamples) == n_expected_records);
     }
     if (read_peer) {
       usleep(read_delay);
-      assert(main_reader(read_peer, bufsize, timeout, verbosity) == n_expected_records);
+      assert(main_reader(read_peer, bufsize, timeout) == n_expected_records);
     }
 
   } else {
     FORK_CHILD
     usleep(write_delay);
-    assert(main_writer(write_peer, events, bufsize, timeout, verbosity, nadcs, ntriggers, eventsamples) == n_expected_records);
+    assert(main_writer(write_peer, events, bufsize, timeout, nadcs, ntriggers, eventsamples) == n_expected_records);
     FORK_PARENT
     usleep(read_delay);
-    assert(main_reader(read_peer, bufsize, timeout, verbosity) == n_expected_records);
+    assert(main_reader(read_peer, bufsize, timeout) == n_expected_records);
     FORK_JOIN
   }
   return 0;
