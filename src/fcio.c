@@ -522,7 +522,7 @@ static inline int fcio_put_status(FCIOStream output, fcio_status* status)
   FCIOWriteInts(output, 10, status->statustime);
   FCIOWriteInt(output, status->cards);
   FCIOWriteInt(output, status->size);
-  int i; for (i = 0; i < status->cards; i++)
+  for (int i = 0; i < status->cards; i++)
     FCIOWrite(output, status->size, (void*)&status->data[i]);
 
   return FCIOFlush(output);
@@ -620,7 +620,7 @@ static inline int fcio_put_sparseevent(FCIOStream output, fcio_config* config, f
   FCIOWriteUShorts(output,event->num_traces,event->trace_list);
 
   int length = config->eventsamples+2;
-  int i; for (i = 0; i < event->num_traces; i++)
+  for (int i = 0; i < event->num_traces; i++)
   {
     int j = event->trace_list[i];
     FCIOWriteUShorts(output,length,&event->traces[j * length]);
@@ -672,15 +672,14 @@ static inline int fcio_put_eventheader(FCIOStream output, fcio_config* config, f
   FCIOWriteInts(output, event->timeoffset_size, event->timeoffset);
   FCIOWriteInts(output, event->timestamp_size, event->timestamp);
   FCIOWriteInts(output, event->deadregion_size, event->deadregion);
-  FCIOWriteInts(output,1,&event->num_traces);
   FCIOWriteUShorts(output,event->num_traces,event->trace_list);
 
   const int length = config->eventsamples + 2;
   unsigned short write_buffer[FCIOMaxChannels * 2];
-  int i; for (i = 0; i < event->num_traces; i++)
+  for (int i = 0; i < event->num_traces; i++)
   {
     int j = event->trace_list[i];
-    int k; for (k = 0; k < 2; k++)
+    for (int k = 0; k < 2; k++)
       write_buffer[i * 2 + k] = event->traces[j * length + k];
   }
   FCIOWriteUShorts(output, event->num_traces * 2, write_buffer);
@@ -856,7 +855,7 @@ static inline int fcio_get_config(FCIOStream stream, fcio_config *config)
       config->mastercards, config->triggercards, config->adccards,
       config->adcs,config->triggers,config->eventsamples,config->adcbits,config->blprecision,config->sumlength,config->gps);
   if (debug > 4) {
-    for(int i = 0; i < tracemap_size; i++)
+    for (int i = 0; i < tracemap_size; i++)
        fprintf(stderr,"FCIO/fcio_get_config/DEBUG: trace %d mapped to 0x%x\n",i,config->tracemap[i]);
   }
 
@@ -1010,7 +1009,7 @@ static inline int fcio_get_eventheader(FCIOStream stream, fcio_config* config, f
     if (read_header_elements < event->num_traces)
       event->num_traces = read_header_elements;
   }
-  for(int i = 0; i < event->num_traces; i++) {
+  for (int i = 0; i < event->num_traces; i++) {
     int trace_idx = event->trace_list[i];
     if (trace_idx >= FCIOMaxChannels) {
       if (debug) fprintf(stderr, "FCIO/fcio_get_eventheader/ERROR: trace_list contains out-of-bounds trace index for traces buffer %d/%d\n", trace_idx, FCIOMaxChannels);
