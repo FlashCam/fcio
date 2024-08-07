@@ -22,5 +22,10 @@ install: compile
 uninstall:
 	cd $(BUILDDIR) && meson --internal uninstall
 
-test:
+test: compile
 	meson test -C $(BUILDDIR) -v --suite fcio
+
+coverage: $(BUILDDIR)
+	meson configure -Db_coverage=true $(BUILDDIR)
+	$(MAKE) test
+	ninja coverage -C $(BUILDDIR)
