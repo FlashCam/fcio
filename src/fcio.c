@@ -992,20 +992,13 @@ static inline int fcio_get_eventheader(FCIOStream stream, fcio_config* config, f
   event->timeoffset_size = FCIOReadInts(stream,10,event->timeoffset)/sizeof(int);
   event->timestamp_size = FCIOReadInts(stream,10,event->timestamp)/sizeof(int);
   event->deadregion_size = FCIOReadInts(stream,10,event->deadregion)/sizeof(int);
-
-  FCIOReadInts(stream,1,&event->num_traces);
-  int read_trace_list_size = FCIOReadUShorts(stream, FCIOMaxChannels, event->trace_list)/sizeof(unsigned short);
-  if (read_trace_list_size != event->num_traces) {
-    if (debug > 1) fprintf(stderr, "FCIO/fcio_get_eventheader/WARNING: trace_list size does not match %d/%d\n", read_trace_list_size, event->num_traces);
-    if (read_trace_list_size < event->num_traces)
-      event->num_traces = read_trace_list_size;
-  }
+  event->num_traces = FCIOReadUShorts(stream, FCIOMaxChannels, event->trace_list)/sizeof(unsigned short);
 
   const int length = config->eventsamples + 2; // checked consistency in fcio_get_config
   unsigned short read_buffer[FCIOMaxChannels * 2];
   int read_header_elements = FCIOReadUShorts(stream, FCIOMaxChannels * 2, read_buffer)/sizeof(unsigned short)/2;
   if (read_header_elements != event->num_traces) {
-    if (debug > 1) fprintf(stderr, "FCIO/fcio_get_eventheader/WARNING: trace_list size does not match %d/%d\n", read_trace_list_size, event->num_traces);
+    if (debug > 1) fprintf(stderr, "FCIO/fcio_get_eventheader/WARNING: trace_list size does not match %d/%d\n", read_header_elements, event->num_traces);
     if (read_header_elements < event->num_traces)
       event->num_traces = read_header_elements;
   }
