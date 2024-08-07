@@ -340,6 +340,14 @@ FCIOState *FCIOGetNextState(FCIOStateReader *reader, int *timedout)
 ;
 int FCIOPutState(FCIOStream output, FCIOState* state)
 ;
+int FCIORead2(FCIOStream x, int max_size, int* size, void *data)
+;
+int FCIOWrite2(FCIOStream x, int max_size, int* size, void *data)
+;
+int FCIORWConfig(FCIOStream stream, int(*action)(FCIOStream,int,int*,void*), fcio_config* config)
+;
+int FCIORWEvent(FCIOStream stream, int(*action)(FCIOStream,int,int*,void*), const fcio_config* config, fcio_event* event)
+;
 #ifdef __cplusplus
 }
 #endif

@@ -1486,6 +1486,154 @@ Returns tmio frame_size (in bytes) on success or <0 on error
   return frame_size;
 }
 
+/*=== Function ===================================================*/
+
+int FCIOWrite2(FCIOStream x, int rw_bytes, int* frame_size, void *data)
+
+/*--- Description ------------------------------------------------//
+
+Write a data item of size bytes length.
+Data must point to the data buffer to transfer.
+Returns size on success, 0 on size < 0 or <0 on error
+
+//----------------------------------------------------------------*/
+{
+  if (!x) {
+    if (debug) fprintf(stderr, "FCIOWrite2/ERROR: output not connected\n");
+    return -1;
+  }
+  if (!data) {
+    if (debug) fprintf(stderr, "FCIOWrite2/ERROR: data not valid (null pointer)\n");
+    return -1;
+  }
+  if (frame_size && *frame_size > rw_bytes) {
+    if (debug) fprintf(stderr, "FCIOWrite2/ERROR: size not valid (%d > %d)\n", *frame_size, rw_bytes);
+    return -1;
+  }
+  // tmio_write_data checks on size < 0 and returns 0
+  // don't need to check here.
+
+  tmio_stream *xio=(tmio_stream *)x;
+
+  int written = tmio_write_data(xio, data, frame_size ? *frame_size : rw_bytes);
+  if (debug > 5)
+    fprintf(stderr,"FCIOWrite2/DEBUG: size %d/%d @ %p \n", written, rw_bytes,(void*)xio);
+
+  if (written >= 0) {
+    if (frame_size)
+      *frame_size = written;
+  } else if (debug) {
+    fprintf(stderr,"FCIOWrite2/ERROR: %s with size %d/%d\n", tmio_status_str(xio), written, rw_bytes);
+    return written;
+  }
+
+  return 0;
+}
+
+/*=== Function ===================================================*/
+
+int FCIORead2(FCIOStream x, int rw_bytes, int* frame_size, void *data)
+
+/*--- Description ------------------------------------------------//
+
+Read a data item of size bytes length into the buffer data.
+
+Returns 0 on success or <0 on error
+
+//----------------------------------------------------------------*/
+{
+  if (!x) return -1;
+
+  tmio_stream *xio=(tmio_stream *)x;
+
+  int read = tmio_read_data(xio, data, rw_bytes);
+  if (debug > 5)
+    fprintf(stderr,"FCIORead2/DEBUG: size %d/%d @ %p \n",
+      read, rw_bytes, (void*)xio);
+  if (debug > 1 && read == -2) {
+    fprintf(stderr, "FCIORead2/WARNING: got unexpected tag or read size < 0 (%d)\n", rw_bytes);
+  }
+  if (read >= 0) {
+    if (frame_size)
+      *frame_size = read;
+  } else if (debug) {
+    fprintf(stderr,"FCIORead2/ERROR: %s size %d/%d @ %p\n",
+      tmio_status_str(xio), read, rw_bytes, (void*)xio);
+    return read;
+  }
+  return 0;
+}
+
+int FCIORWConfig(FCIOStream stream, int(*action)(FCIOStream,int,int*,void*), fcio_config* config)
+{
+  if (action != &FCIOWrite2 && action != &FCIORead2) {
+    if (debug) fprintf(stderr, "FCIORWConfig/ERROR: Supplied action is invalid.\n");
+    return -1;
+  }
+
+  if (!config || !stream)
+    return -1;
+
+  int nchannels = config->adcs + config->triggers;
+  if((nchannels) > FCIOMaxChannels)
+    return -1;
+
+  int tracemap_bytes = sizeof(*config->tracemap) * nchannels;
+
+  int rc = ( 0
+  | action(stream,sizeof(config->adcs),        NULL, &config->adcs)
+  | action(stream,sizeof(config->triggers),    NULL, &config->triggers)
+  | action(stream,sizeof(config->eventsamples),NULL, &config->eventsamples)
+  | action(stream,sizeof(config->blprecision), NULL, &config->blprecision)
+  | action(stream,sizeof(config->sumlength),   NULL, &config->sumlength)
+  | action(stream,sizeof(config->adcbits),     NULL, &config->adcbits)
+  | action(stream,sizeof(config->mastercards), NULL, &config->mastercards)
+  | action(stream,sizeof(config->triggercards),NULL, &config->triggercards)
+  | action(stream,sizeof(config->adccards),    NULL, &config->adccards)
+  | action(stream,sizeof(config->gps),         NULL, &config->gps)
+  | action(stream,sizeof(config->tracemap),    &tracemap_bytes, config->tracemap)
+  );
+
+  if (action == FCIOWrite2)
+    rc |= FCIOFlush(stream);
+  return rc;
+}
+
+int FCIORWEvent(FCIOStream stream, int(*action)(FCIOStream,int,int*,void*), const fcio_config* config, fcio_event* event)
+{
+  if (action != &FCIOWrite2 && action != &FCIORead2) {
+    if (debug) fprintf(stderr, "FCIORWEvent/ERROR: Supplied action is invalid.\n");
+    return -1;
+  }
+
+  if (!stream || !config || !event)
+    return -1;
+
+  int ntotalsamples_bytes = sizeof(*event->traces) * (config->adcs+config->triggers)*(config->eventsamples+2);
+  int timeoffset_size_bytes = event->timeoffset_size * sizeof(*event->timeoffset);
+  int timestamp_size_bytes = event->timestamp_size * sizeof(*event->timestamp);
+  int deadregion_size_bytes = event->deadregion_size * sizeof(*event->deadregion);
+
+  int rc = ( 0
+  | action(stream,sizeof(event->type),             NULL, &event->type)
+  | action(stream,sizeof(event->pulser),           NULL, &event->pulser)
+  | action(stream,sizeof(event->timeoffset), &timeoffset_size_bytes, &event->timeoffset)
+  | action(stream,sizeof(event->timestamp),  &timestamp_size_bytes, &event->timestamp)
+  | action(stream,sizeof(event->traces), &ntotalsamples_bytes, &event->traces)
+  | action(stream,sizeof(event->deadregion), &deadregion_size_bytes, &event->deadregion)
+  );
+
+  if (action == FCIOWrite2)
+    rc |= FCIOFlush(stream);
+  else if (action == FCIORead2) {
+    event->timeoffset_size = timeoffset_size_bytes / sizeof(*event->timeoffset);
+    event->timestamp_size = timestamp_size_bytes / sizeof(*event->timestamp);
+    event->deadregion_size = deadregion_size_bytes / sizeof(*event->deadregion);
+  }
+
+  return rc;
+}
+
 
 /*--- Structures  -----------------------------------------------*/
 

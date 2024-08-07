@@ -36,14 +36,14 @@ void fill_default_event(FCIOData* io)
   io->event.pulser = 0;
   io->event.timestamp_size = 5;
   io->event.timeoffset_size = 5;
-  io->event.deadregion_size = 5;
+  io->event.deadregion_size = 7;
 
   // start fcio_get_event fills these fields on FCIOEvent
   io->event.deadregion[5] = 0;
   io->event.deadregion[6] = io->config.adcs + io->config.triggers;
-  io->event.num_traces = io->event.deadregion[6];
-  for (int i = 0; i < FCIOMaxChannels; i++)
-    io->event.trace_list[i] = i;
+  // io->event.num_traces = io->event.deadregion[6];
+  // for (int i = 0; i < FCIOMaxChannels; i++)
+  //   io->event.trace_list[i] = i;
   // end
 
 
