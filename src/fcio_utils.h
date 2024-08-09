@@ -17,5 +17,6 @@ typedef struct {
 
 } FCIORecordSizes;
 
-FCIORecordSizes FCIOMeasureRecordSizes(FCIOData* data, FCIORecordSizes sizes);
-FCIORecordSizes FCIOCalculateRecordSizes(FCIOData* data, FCIORecordSizes sizes);
+void FCIOMeasureRecordSizes(FCIOData* data, FCIORecordSizes* sizes);
+void FCIOCalculateRecordSizes(FCIOData* data, FCIORecordSizes* sizes);
+size_t FCIOWrittenBytes(FCIOStream stream);

@@ -14,40 +14,40 @@ size_t FCIOWrittenBytes(FCIOStream stream)
   return new;
 }
 
-FCIORecordSizes FCIOMeasureRecordSizes(FCIOData* data, FCIORecordSizes sizes)
+void FCIOMeasureRecordSizes(FCIOData* data, FCIORecordSizes* sizes)
 {
+  if (!data || !sizes)
+    return;
   const char* null_device = "file:///dev/null";
 
   FCIOWrittenBytes(NULL);
   FCIOStream stream = FCIOConnect(null_device, 'w', 0, 0);
-  sizes.protocol = FCIOWrittenBytes(stream);
+  sizes->protocol = FCIOWrittenBytes(stream);
 
   size_t current_size = 0;
   int rc = 0;
 
   rc = FCIOPutConfig(stream, data);
   if ((current_size = FCIOWrittenBytes(stream)) && !rc)
-    sizes.config = current_size;
+    sizes->config = current_size;
 
   rc = FCIOPutEvent(stream, data);
   if ((current_size = FCIOWrittenBytes(stream)) && !rc)
-    sizes.event = current_size;
+    sizes->event = current_size;
 
   rc = FCIOPutStatus(stream, data);
   if ((current_size = FCIOWrittenBytes(stream)) && !rc)
-    sizes.status = current_size;
+    sizes->status = current_size;
 
   rc = FCIOPutEventHeader(stream, data);
   if ((current_size = FCIOWrittenBytes(stream)) && !rc)
-    sizes.eventheader = current_size;
+    sizes->eventheader = current_size;
 
   rc = FCIOPutSparseEvent(stream, data);
   if ((current_size = FCIOWrittenBytes(stream)) && !rc)
-    sizes.sparseevent = current_size;
+    sizes->sparseevent = current_size;
 
   FCIODisconnect(stream);
-
-  return sizes;
 }
 
 
@@ -116,16 +116,17 @@ static inline size_t status_size(const fcio_status* status)
 }
 
 
-FCIORecordSizes FCIOCalculateRecordSizes(FCIOData* data, FCIORecordSizes sizes)
+void FCIOCalculateRecordSizes(FCIOData* data, FCIORecordSizes* sizes)
 {
+  if (!data || !sizes)
+    return;
+
   const size_t frame_header = sizeof(int);
 
-  sizes.protocol = TMIO_PROTOCOL_SIZE + frame_header;
-  sizes.config = config_size(&data->config);
-  sizes.event = event_size(FCIOEvent, &data->event, &data->config);
-  sizes.status = status_size(&data->status);
-  sizes.eventheader = event_size(FCIOEventHeader, &data->event, &data->config);
-  sizes.sparseevent = event_size(FCIOSparseEvent, &data->event, &data->config);
-
-  return sizes;
+  sizes->protocol = TMIO_PROTOCOL_SIZE + frame_header;
+  sizes->config = config_size(&data->config);
+  sizes->event = event_size(FCIOEvent, &data->event, &data->config);
+  sizes->status = status_size(&data->status);
+  sizes->eventheader = event_size(FCIOEventHeader, &data->event, &data->config);
+  sizes->sparseevent = event_size(FCIOSparseEvent, &data->event, &data->config);
 }
