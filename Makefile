@@ -1,6 +1,6 @@
 BUILDDIR:=build
 
-.PHONY: setup compile install uninstall clean
+.PHONY: setup compile install uninstall clean debug release
 
 all: compile
 
@@ -15,6 +15,10 @@ compile: $(BUILDDIR)
 
 local: $(BUILDDIR)
 	meson configure -Dprefix=${HOME}/.local $(BUILDDIR)
+
+debug release: $(BUILDDIR)
+	meson configure --buildtype $@ $(BUILDDIR)
+	$(MAKE) compile
 
 install: compile
 	meson install -C $(BUILDDIR)

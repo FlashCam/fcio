@@ -13,14 +13,10 @@ project('fcio', 'c',
 
 tmio_dep = dependency('tmio', fallback : ['tmio', 'tmio_dep'])
 
-fcio_inc= include_directories('src')
+
 
 subdir('src')
-
-fcio_dep = declare_dependency(include_directories : fcio_inc, link_with : fcio_lib, sources : fcio_sources, dependencies : [tmio_dep])
-
 subdir('tests')
-
 subdir('examples')
 
 pkg_mod = import('pkgconfig')
