@@ -1,15 +1,5 @@
-/*
-  tmio_benchmark
-
-  General purpose benchmarking utility for bi- and unidirectional tmio
-  streams. Transfer structure tries to imitate a camera server, sending
-  a run header followed by many events (20 Byte header, configurable trace
-  data) and a final end-of-run.
-*/
-
 #define _DEFAULT_SOURCE
 
-#include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
@@ -17,10 +7,10 @@
 #include <unistd.h>
 
 #include <fcio.h>
+#include <fcio_utils.h>
 #include "fcio_test_utils.h"
 #include "test.h"
 #include "timer.h"
-
 
 int verbosity = 0;
 
@@ -37,13 +27,16 @@ int main_writer(const char *peer,
   fill_default_config(payload, 12, nadcs, ntriggers, eventsamples);
   fill_default_event(payload);
   int msgcounter = 0;
+  FCIORecordSizes sizes = {0};
+  FCIOCalculateRecordSizes(payload, &sizes);
 
   init_benchmark_statistics();
 
+
   FCIOStream stream = FCIOConnect(peer, 'w', connect_timeout, bufsize);
-  if ( FCIOPutConfig(stream, payload) ) {
+  if ( FCIOPutConfig(stream, payload) )
     return msgcounter;
-  }
+
   msgcounter++;
   for (int i = 0; i < events; i++) {
     if( FCIOPutRecord(stream, payload, FCIOEvent) ) {
@@ -53,7 +46,7 @@ int main_writer(const char *peer,
   }
   FCIODisconnect(stream);
 
-  print_benchmark_statistics("writer", msgcounter, sizeof(fcio_event), events * sizeof(fcio_event));
+  print_benchmark_statistics("writer", msgcounter, sizes.event, events * sizes.event);
 
   return msgcounter;
 }
@@ -72,9 +65,12 @@ int main_reader(const char *peer,
   FCIOData* io = FCIOOpen(peer, connect_timeout, bufsize);
   while ( (tag = FCIOGetRecord(io)) && tag > 0)
     msgcounter++;
+
+  FCIORecordSizes sizes = {0};
+  FCIOCalculateRecordSizes(io, &sizes);
   FCIOClose(io);
 
-  print_benchmark_statistics("reader", msgcounter, sizeof(fcio_event), msgcounter * sizeof(fcio_event));
+  print_benchmark_statistics("reader", msgcounter, sizes.event, msgcounter * sizes.event);
 
   return msgcounter;
 }
