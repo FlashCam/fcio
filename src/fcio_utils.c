@@ -1,6 +1,16 @@
 #include "fcio_utils.h"
 #include "fcio.h"
+
+#include <bufio.h>
 #include <tmio.h>
+
+int FCIOSetMemField(FCIOStream stream, char *mem_addr, size_t mem_size) {
+  if (!mem_addr)
+    return -1;
+  // bufio_set_mem_field check if the stream was opened using mem://
+  // returns 0 on success, 1 on error.
+  return bufio_set_mem_field(tmio_stream_handle(stream), mem_addr, mem_size);
+}
 
 size_t FCIOWrittenBytes(FCIOStream stream)
 {
