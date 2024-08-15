@@ -24,6 +24,18 @@ size_t FCIOWrittenBytes(FCIOStream stream)
   return new;
 }
 
+size_t FCIOReadBytes(FCIOStream stream)
+{
+  static size_t read = 0;
+  if (!stream)
+    return read = 0;
+  tmio_stream* tmio = (tmio_stream*)stream;
+
+  size_t new = tmio->bytesread - read;
+  read = tmio->byteswritten;
+  return new;
+}
+
 void FCIOMeasureRecordSizes(FCIOData* data, FCIORecordSizes* sizes)
 {
   if (!data || !sizes)
