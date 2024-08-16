@@ -187,3 +187,21 @@ void FCIOPrintRecordSizes(FCIORecordSizes sizes)
   fprintf(stderr, "..fspevent    %zu bytes\n", sizes.fspevent);
   fprintf(stderr, "..fspstatus   %zu bytes\n", sizes.fspstatus);
 }
+
+const char* FCIOTagStr(int tag)
+{
+  switch (tag) {
+    case FCIOConfig: return "FCIOConfig";
+    case FCIOCalib: return "FCIOCalib";
+    case FCIOEvent: return "FCIOEvent";
+    case FCIOStatus: return "FCIOStatus";
+    case FCIORecEvent: return "FCIORecEvent";
+    case FCIOSparseEvent: return "FCIOSparseEvent";
+    case FCIOEventHeader: return "FCIOEventHeader";
+    case FCIOFSPConfig: return "FCIOFSPConfig";
+    case FCIOFSPEvent: return "FCIOFSPEvent";
+    case FCIOFSPStatus: return "FCIOFSPStatus";
+    case 0: return "EOF";
+    default: return "ERROR";
+  }
+}

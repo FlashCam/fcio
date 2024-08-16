@@ -28,3 +28,4 @@ size_t FCIOStreamBytes(FCIOStream stream, int direction, size_t offset);
 
 int FCIOSetMemField(FCIOStream stream, void *mem_addr, size_t mem_size);
 void FCIOPrintRecordSizes(FCIORecordSizes sizes);
+const char* FCIOTagStr(int tag);
