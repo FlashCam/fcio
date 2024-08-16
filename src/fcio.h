@@ -338,7 +338,7 @@ FCIOState *FCIOGetState(FCIOStateReader *reader, int offset, int *timedout)
 ;
 FCIOState *FCIOGetNextState(FCIOStateReader *reader, int *timedout)
 ;
-int FCIOPutState(FCIOStream output, FCIOState* state)
+int FCIOPutState(FCIOStream output, FCIOState* state, int tag)
 ;
 #ifdef __cplusplus
 }

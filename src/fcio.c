@@ -1939,18 +1939,21 @@ Calls FCIOGetState with offset == 1.
 
 /*=== Function ===================================================*/
 
-int FCIOPutState(FCIOStream output, FCIOState* state)
+int FCIOPutState(FCIOStream output, FCIOState* state, int tag)
 
 /*--- Description ------------------------------------------------//
 
-Returns 0 on success, 0 on unknown tag or <0 on error.
+Returns 0 on success or <0 on error.
 
 //----------------------------------------------------------------*/
 {
   if (!output || !state)
     return -1;
 
-  switch (state->last_tag) {
+  if (tag == 0)
+    tag = state->last_tag;
+
+  switch (tag) {
     case FCIOEvent:
       return fcio_put_event(output, state->config, state->event);
 
