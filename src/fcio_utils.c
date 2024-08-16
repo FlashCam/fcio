@@ -4,12 +4,25 @@
 #include <bufio.h>
 #include <tmio.h>
 
-int FCIOSetMemField(FCIOStream stream, char *mem_addr, size_t mem_size) {
+int FCIOSetMemField(FCIOStream stream, void *mem_addr, size_t mem_size) {
   if (!mem_addr)
     return -1;
   // bufio_set_mem_field check if the stream was opened using mem://
   // returns 0 on success, 1 on error.
   return bufio_set_mem_field(tmio_stream_handle(stream), mem_addr, mem_size);
+}
+
+size_t FCIOStreamBytes(FCIOStream stream, int direction, size_t offset)
+{
+    if (!stream)
+        return 0;
+    tmio_stream* tmio = (tmio_stream*)stream;
+    switch(direction) {
+        case 'w': return tmio->byteswritten - offset;
+        case 'r': return tmio->bytesread - offset;
+        case 's': return tmio->bytesskipped - offset;
+        default: return 0;
+    }
 }
 
 size_t FCIOWrittenBytes(FCIOStream stream)
@@ -21,18 +34,6 @@ size_t FCIOWrittenBytes(FCIOStream stream)
 
   size_t new = tmio->byteswritten - written;
   written = tmio->byteswritten;
-  return new;
-}
-
-size_t FCIOReadBytes(FCIOStream stream)
-{
-  static size_t read = 0;
-  if (!stream)
-    return read = 0;
-  tmio_stream* tmio = (tmio_stream*)stream;
-
-  size_t new = tmio->bytesread - read;
-  read = tmio->byteswritten;
   return new;
 }
 
@@ -153,20 +154,36 @@ void FCIOCalculateRecordSizes(FCIOData* data, FCIORecordSizes* sizes)
   sizes->sparseevent = event_size(FCIOSparseEvent, &data->event, &data->config);
 }
 
-const char* FCIOTagStr(int tag)
+void FCIOStateCalculateRecordSizes(FCIOState* state, FCIORecordSizes* sizes)
 {
-  switch (tag) {
-    case FCIOConfig: return "FCIOConfig";
-    case FCIOCalib: return "FCIOCalib";
-    case FCIOEvent: return "FCIOEvent";
-    case FCIOStatus: return "FCIOStatus";
-    case FCIORecEvent: return "FCIORecEvent";
-    case FCIOSparseEvent: return "FCIOSparseEvent";
-    case FCIOEventHeader: return "FCIOEventHeader";
-    case FCIOFSPConfig: return "FCIOFSPConfig";
-    case FCIOFSPEvent: return "FCIOFSPEvent";
-    case FCIOFSPStatus: return "FCIOFSPStatus";
-    case 0: return "EOF";
-    default: return "ERROR";
-  }
+    if (!state || !sizes)
+      return;
+
+    const size_t frame_header = sizeof(int);
+
+    sizes->protocol = TMIO_PROTOCOL_SIZE + frame_header;
+    if (state->config)
+        sizes->config = config_size(state->config);
+
+    if (state->status)
+        sizes->status = status_size(state->status);
+
+    if (state->config && state->event) {
+        sizes->event = event_size(FCIOEvent, state->event, state->config);
+        sizes->eventheader = event_size(FCIOEventHeader, state->event, state->config);
+        sizes->sparseevent = event_size(FCIOSparseEvent, state->event, state->config);
+    }
+}
+
+void FCIOPrintRecordSizes(FCIORecordSizes sizes)
+{
+  fprintf(stderr, "..protocol    %zu bytes\n", sizes.protocol);
+  fprintf(stderr, "..config      %zu bytes\n", sizes.config);
+  fprintf(stderr, "..event       %zu bytes\n", sizes.event);
+  fprintf(stderr, "..sparseevent %zu bytes\n", sizes.sparseevent);
+  fprintf(stderr, "..eventheader %zu bytes\n", sizes.eventheader);
+  fprintf(stderr, "..status      %zu bytes\n", sizes.status);
+  fprintf(stderr, "..fspconfig   %zu bytes\n", sizes.fspconfig);
+  fprintf(stderr, "..fspevent    %zu bytes\n", sizes.fspevent);
+  fprintf(stderr, "..fspstatus   %zu bytes\n", sizes.fspstatus);
 }

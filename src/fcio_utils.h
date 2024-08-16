@@ -19,6 +19,12 @@ typedef struct {
 
 void FCIOMeasureRecordSizes(FCIOData* data, FCIORecordSizes* sizes);
 void FCIOCalculateRecordSizes(FCIOData* data, FCIORecordSizes* sizes);
+
+void FCIOStateMeasureRecordSizes(FCIOState* state, FCIORecordSizes* sizes);
+void FCIOStateCalculateRecordSizes(FCIOState* state, FCIORecordSizes* sizes);
+
 size_t FCIOWrittenBytes(FCIOStream stream);
-int FCIOSetMemField(FCIOStream stream, char *mem_addr, size_t mem_size);
-const char* FCIOTagStr(int tag);
+size_t FCIOStreamBytes(FCIOStream stream, int direction, size_t offset);
+
+int FCIOSetMemField(FCIOStream stream, void *mem_addr, size_t mem_size);
+void FCIOPrintRecordSizes(FCIORecordSizes sizes);
