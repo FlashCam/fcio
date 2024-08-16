@@ -152,3 +152,21 @@ void FCIOCalculateRecordSizes(FCIOData* data, FCIORecordSizes* sizes)
   sizes->eventheader = event_size(FCIOEventHeader, &data->event, &data->config);
   sizes->sparseevent = event_size(FCIOSparseEvent, &data->event, &data->config);
 }
+
+const char* FCIOTagStr(int tag)
+{
+  switch (tag) {
+    case FCIOConfig: return "FCIOConfig";
+    case FCIOCalib: return "FCIOCalib";
+    case FCIOEvent: return "FCIOEvent";
+    case FCIOStatus: return "FCIOStatus";
+    case FCIORecEvent: return "FCIORecEvent";
+    case FCIOSparseEvent: return "FCIOSparseEvent";
+    case FCIOEventHeader: return "FCIOEventHeader";
+    case FCIOFSPConfig: return "FCIOFSPConfig";
+    case FCIOFSPEvent: return "FCIOFSPEvent";
+    case FCIOFSPStatus: return "FCIOFSPStatus";
+    case 0: return "EOF";
+    default: return "ERROR";
+  }
+}

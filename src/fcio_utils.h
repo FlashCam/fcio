@@ -21,3 +21,4 @@ void FCIOMeasureRecordSizes(FCIOData* data, FCIORecordSizes* sizes);
 void FCIOCalculateRecordSizes(FCIOData* data, FCIORecordSizes* sizes);
 size_t FCIOWrittenBytes(FCIOStream stream);
 int FCIOSetMemField(FCIOStream stream, char *mem_addr, size_t mem_size);
+const char* FCIOTagStr(int tag);
