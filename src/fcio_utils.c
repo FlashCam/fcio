@@ -14,15 +14,15 @@ int FCIOSetMemField(FCIOStream stream, void *mem_addr, size_t mem_size) {
 
 size_t FCIOStreamBytes(FCIOStream stream, int direction, size_t offset)
 {
-    if (!stream)
-        return 0;
-    tmio_stream* tmio = (tmio_stream*)stream;
-    switch(direction) {
-        case 'w': return tmio->byteswritten - offset;
-        case 'r': return tmio->bytesread - offset;
-        case 's': return tmio->bytesskipped - offset;
-        default: return 0;
-    }
+  if (!stream)
+      return 0;
+  tmio_stream* tmio = (tmio_stream*)stream;
+  switch(direction) {
+      case 'w': return tmio->byteswritten - offset;
+      case 'r': return tmio->bytesread - offset;
+      case 's': return tmio->bytesskipped - offset;
+      default: return 0;
+  }
 }
 
 size_t FCIOWrittenBytes(FCIOStream stream)
