@@ -32,9 +32,9 @@ size_t FCIOWrittenBytes(FCIOStream stream)
     return written = 0;
   tmio_stream* tmio = (tmio_stream*)stream;
 
-  size_t new = tmio->byteswritten - written;
+  size_t new_bytes = tmio->byteswritten - written;
   written = tmio->byteswritten;
-  return new;
+  return new_bytes;
 }
 
 void FCIOMeasureRecordSizes(FCIOData* data, FCIORecordSizes* sizes)
