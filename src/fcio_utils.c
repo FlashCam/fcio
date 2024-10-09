@@ -9,7 +9,7 @@ int FCIOSetMemField(FCIOStream stream, void *mem_addr, size_t mem_size) {
     return -1;
   // bufio_set_mem_field check if the stream was opened using mem://
   // returns 0 on success, 1 on error.
-  return bufio_set_mem_field(tmio_stream_handle(stream), mem_addr, mem_size);
+  return bufio_set_mem_field((bufio_stream*)tmio_stream_handle((tmio_stream*)stream), (char*)mem_addr, mem_size);
 }
 
 size_t FCIOStreamBytes(FCIOStream stream, int direction, size_t offset)
