@@ -970,7 +970,7 @@ static inline int fcio_get_sparseevent(FCIOStream stream, fcio_event *event, int
     fprintf(stderr,"FCIO/fcio_get_sparseevent/DEBUG: type %d pulser %g, offset %d %d %d ",event->type,event->pulser,event->timeoffset[0],event->timeoffset[1],event->timeoffset[2]);
     fprintf(stderr,"timestamp[%d]", event->timestamp_size); for (int i = 0; i < event->timestamp_size; i++) fprintf(stderr," %d",event->timestamp[i]);
     fprintf(stderr,"deadregion[%d]", event->deadregion_size); for (int i = 0; i < event->deadregion_size; i++) fprintf(stderr," %d",event->deadregion[i]);
-    if (debug > 4) {
+    if (debug > 5) {
       fprintf(stderr," traces[%d]", event->num_traces);
       for (int i = 0; i < event->num_traces; i++) fprintf(stderr," %d",event->trace_list[i]);
     }
@@ -1015,9 +1015,10 @@ static inline int fcio_get_eventheader(FCIOStream stream, fcio_config* config, f
     fprintf(stderr,"deadregion[%d]", event->deadregion_size); for (int i = 0; i < event->deadregion_size; i++) fprintf(stderr," %d",event->deadregion[i]);
     if (debug > 5) {
       fprintf(stderr," traces[%d]", event->num_traces);
-      for (int i = 0; i < event->num_traces; i++) fprintf(stderr," %d %u",event->trace_list[i], event->theader[event->trace_list[i]][1]);
-      fprintf(stderr,"\n");
+      for (int i = 0; i < event->num_traces; i++)
+        fprintf(stderr," %d %u",event->trace_list[i], event->theader[event->trace_list[i]][1]);
     }
+    fprintf(stderr,"\n");
   }
   return 0;
 }
