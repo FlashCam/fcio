@@ -154,7 +154,7 @@ readers of the FCIO files/streams
 
 typedef struct {                 // Readout configuration (typically once at start of run)
 
-  int telid;                     // trace event list id ;-)
+  int streamid;                  // Identifier for this data stream
   int adcs;                      // Number of FADC channels
   int triggers;                  // Number of trigger channels
   int eventsamples;              // Number of FADC samples per trace
@@ -479,6 +479,7 @@ static inline int fcio_put_config(FCIOStream output, fcio_config* config)
   FCIOWriteInt(output,config->adccards);
   FCIOWriteInt(output,config->gps);
   FCIOWriteInts(output,(config->adcs+config->triggers),config->tracemap);
+  FCIOWriteInt(output,config->streamid);
 
   return FCIOFlush(output);
 }
@@ -846,6 +847,7 @@ static inline int fcio_get_config(FCIOStream stream, fcio_config *config)
   FCIOReadInt(stream,config->adccards);
   FCIOReadInt(stream,config->gps);
   int tracemap_size = FCIOReadInts(stream, FCIOMaxChannels, config->tracemap)/sizeof(int);
+  FCIOReadInt(stream,config->streamid);
 
   if (debug > 3)
     fprintf(stderr,"FCIO/fcio_get_config/DEBUG: %d/%d/%d adcs %d triggers %d samples %d adcbits %d blprec %d sumlength %d gps %d\n",
@@ -855,6 +857,7 @@ static inline int fcio_get_config(FCIOStream stream, fcio_config *config)
     for (int i = 0; i < tracemap_size; i++)
        fprintf(stderr,"FCIO/fcio_get_config/DEBUG: trace %d mapped to 0x%x\n",i,config->tracemap[i]);
   }
+
 
   // tracemap must not be present, but should match number of traces.
   if (tracemap_size && tracemap_size != n_configured_traces) {

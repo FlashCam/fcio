@@ -24,6 +24,7 @@ void print_sizes(FCIORecordSizes sizes)
 
 void set_parameters(FCIOData* data, unsigned int nchannels, unsigned int nsamples, int verbose)
 {
+  data->config.streamid = 100;
   data->config.adcs = nchannels;
   data->config.adccards = data->config.adcs / 24 + ((data->config.adcs % 24) == 0 ? 0 : 1);
   data->config.triggercards = data->config.adccards / 8 + ((data->config.adccards % 8) == 0 ? 0 : 1);

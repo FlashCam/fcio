@@ -121,6 +121,7 @@ static inline size_t config_size(const fcio_config* config)
   total_size += frame_header + sizeof(((fcio_config){0}).adccards);
   total_size += frame_header + sizeof(((fcio_config){0}).gps);
   total_size += frame_header + sizeof(*((fcio_config){0}).tracemap) * (config->adcs+config->triggers);
+  total_size += frame_header + sizeof(((fcio_config){0}).streamid);
   return total_size;
 }
 

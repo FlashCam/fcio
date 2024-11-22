@@ -6,7 +6,7 @@
 
 void fill_default_config(FCIOData* io, int adcbits, int nadcs, int ntriggers, int eventsamples)
 {
-  io->config.telid = 0;
+  io->config.streamid= 0;
   io->config.gps = 0;
   if (adcbits == 12) {
     io->config.adcs = nadcs;
