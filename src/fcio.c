@@ -1450,7 +1450,9 @@ Returns the tag (>0) on success or 0 on timeout and <0 on error.
 
   int tag = tmio_read_tag(xio);
   if (debug > 5)
-    fprintf(stderr,"FCIOReadMessage/DEBUG: got tag %d @ %p \n", tag, (void*)xio);
+    fprintf(stderr,"FCIOReadMessage/DEBUG: got tag %d @ %p\n", tag, (void*)xio);
+  if (debug && tag < 0)
+    fprintf(stderr, "FCIOReadMessage/ERROR: %s tag %d @ %p\n", tmio_status_str(xio), tag, (void*)xio);
   return tag;
 }
 
